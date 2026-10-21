@@ -1,0 +1,13 @@
+{
+  "release_name": "NameThatLLM-GoldRelease",
+  "purpose": "Public GPU handoff for Name That LLM",
+  "contains_raw_competition_data": false,
+  "contains_hidden_test_labels": false,
+  "contains_model_weights": false,
+  "contains_credentials": false,
+  "primary_gpu_recipe": "scripts/kaggle_best_two_stage_lora.py",
+  "primary_cpu_recipe": "scripts/kaggle_submit.py",
+  "validation": "prompt-grouped balanced accuracy",
+  "user_goal": "gold medal",
+  "upstream_0_667_attribution_verified": false
+}

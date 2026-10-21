@@ -1,0 +1,54 @@
+# Competition data and local archives
+/data/
+*.csv
+*.parquet
+*.zip
+*.7z
+*.rar
+
+# Model weights and adapters
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.gguf
+
+# Local outputs and experiment artifacts
+outputs/
+artifacts/
+checkpoints/
+runs/
+logs/
+*.npy
+*.npz
+*.pkl
+*.joblib
+
+# Python caches and environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Secrets
+.env
+.env.*
+*.token
+*.secret
+credentials.json
+kaggle.json
+
+# Local release staging
+release_manifest.local.json

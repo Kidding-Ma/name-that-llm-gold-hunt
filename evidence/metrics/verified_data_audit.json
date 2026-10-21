@@ -1,0 +1,117 @@
+{
+  "python": "3.13.1 (tags/v3.13.1:0671451, Dec  3 2024, 19:06:28) [MSC v.1942 64 bit (AMD64)]",
+  "train": {
+    "rows": 2699,
+    "columns": [
+      "id",
+      "prompt_id",
+      "text",
+      "model"
+    ],
+    "sha256": "40a22ce8d88c5f46feb4637a099db815bef5f713ffe53e89dbe1b7b21de77707",
+    "nulls": {
+      "id": 0,
+      "prompt_id": 0,
+      "text": 0,
+      "model": 0
+    },
+    "duplicate_ids": 0,
+    "duplicate_exact_texts": 0,
+    "duplicate_normalized_texts": 0,
+    "normalized_text_unique": 2699
+  },
+  "test_visible_example": {
+    "rows": 3,
+    "columns": [
+      "id",
+      "text"
+    ],
+    "sha256": "4545aa3a3459f4c0724f97ad5bd06c4caa3506bdfea5fab905e8203184fc0c57",
+    "nulls": {
+      "id": 0,
+      "text": 0
+    },
+    "duplicate_ids": 0,
+    "text_overlap_exact_with_train": 0,
+    "text_overlap_normalized_with_train": 0
+  },
+  "labels": [
+    "claude-fable-5",
+    "claude-opus-4-6",
+    "claude-opus-4-8",
+    "claude-opus-5",
+    "claude-sonnet-5",
+    "gemini-3.1-pro-preview",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-3.8-flash",
+    "glm-5.3",
+    "glm-5.3-flash",
+    "gpt-5.5",
+    "gpt-5.6-luna",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-6-astra",
+    "kimi-k3",
+    "qwen3.8-max"
+  ],
+  "label_count": 18,
+  "class_counts": {
+    "claude-fable-5": 149,
+    "claude-opus-4-6": 150,
+    "claude-opus-4-8": 150,
+    "claude-opus-5": 150,
+    "claude-sonnet-5": 150,
+    "gemini-3.1-pro-preview": 150,
+    "gemini-3.6-flash": 150,
+    "gemini-3.7-flash": 150,
+    "gemini-3.8-flash": 150,
+    "glm-5.3": 150,
+    "glm-5.3-flash": 150,
+    "gpt-5.5": 150,
+    "gpt-5.6-luna": 150,
+    "gpt-5.6-sol": 150,
+    "gpt-5.6-terra": 150,
+    "gpt-6-astra": 150,
+    "kimi-k3": 150,
+    "qwen3.8-max": 150
+  },
+  "provider_counts": {
+    "Anthropic": 749,
+    "Google": 600,
+    "Moonshot AI": 150,
+    "OpenAI": 750,
+    "Qwen": 150,
+    "ZAI": 300
+  },
+  "prompts": {
+    "count": 150,
+    "size_min": 17,
+    "size_max": 18,
+    "size_counts": {
+      "17": 1,
+      "18": 149
+    },
+    "prompt_model_duplicate_pairs": 0,
+    "max_rows_per_prompt_model": 1,
+    "prompt_with_all_labels": 149
+  },
+  "normalized_duplicate_components": {
+    "component_count": 2699,
+    "components_size_gt_1": 0,
+    "rows_in_components_size_gt_1": 0,
+    "max_component_size": 1,
+    "cross_prompt_components": 0,
+    "cross_model_components": 0
+  },
+  "contract": {
+    "hidden_test_prompt_id_available": false,
+    "submission_columns": [
+      "id",
+      "model"
+    ],
+    "visible_test_is_hidden_test": false,
+    "recommended_validation": "5-fold prompt-grouped CV; fit all vectorizers/scalers inside fold",
+    "primary_metric": "pooled 18-class balanced accuracy"
+  }
+}

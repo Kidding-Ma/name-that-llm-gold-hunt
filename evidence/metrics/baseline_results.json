@@ -1,0 +1,150 @@
+{
+  "prompt_grouped": {
+    "balanced_accuracy": 0.3704026845637584,
+    "accuracy": 0.3705075954057058,
+    "folds": [
+      {
+        "fold": 0,
+        "balanced_accuracy": 0.3779693486590039,
+        "n_train": 2160,
+        "n_valid": 539,
+        "overlapping_prompt_ids": 0
+      },
+      {
+        "fold": 1,
+        "balanced_accuracy": 0.3666666666666667,
+        "n_train": 2159,
+        "n_valid": 540,
+        "overlapping_prompt_ids": 0
+      },
+      {
+        "fold": 2,
+        "balanced_accuracy": 0.35370370370370374,
+        "n_train": 2159,
+        "n_valid": 540,
+        "overlapping_prompt_ids": 0
+      },
+      {
+        "fold": 3,
+        "balanced_accuracy": 0.3685185185185185,
+        "n_train": 2159,
+        "n_valid": 540,
+        "overlapping_prompt_ids": 0
+      },
+      {
+        "fold": 4,
+        "balanced_accuracy": 0.3851851851851852,
+        "n_train": 2159,
+        "n_valid": 540,
+        "overlapping_prompt_ids": 0
+      }
+    ],
+    "provider_accuracy": 0.6984068173397555,
+    "per_class_recall": {
+      "claude-fable-5": 0.087248322147651,
+      "claude-opus-4-6": 0.62,
+      "claude-opus-4-8": 0.24,
+      "claude-opus-5": 0.6333333333333333,
+      "claude-sonnet-5": 0.41333333333333333,
+      "gemini-3.1-pro-preview": 0.7733333333333333,
+      "gemini-3.6-flash": 0.43333333333333335,
+      "gemini-3.7-flash": 0.42,
+      "gemini-3.8-flash": 0.36,
+      "glm-5.3": 0.17333333333333334,
+      "glm-5.3-flash": 0.16666666666666666,
+      "gpt-5.5": 0.4066666666666667,
+      "gpt-5.6-luna": 0.26666666666666666,
+      "gpt-5.6-sol": 0.14,
+      "gpt-5.6-terra": 0.19333333333333333,
+      "gpt-6-astra": 0.6733333333333333,
+      "kimi-k3": 0.2,
+      "qwen3.8-max": 0.4666666666666667
+    }
+  },
+  "random_rows_diagnostic": {
+    "balanced_accuracy": 0.20815063385533186,
+    "accuracy": 0.20822526861800666,
+    "folds": [
+      {
+        "fold": 0,
+        "balanced_accuracy": 0.22592592592592592,
+        "n_train": 2159,
+        "n_valid": 540,
+        "overlapping_prompt_ids": 148
+      },
+      {
+        "fold": 1,
+        "balanced_accuracy": 0.22592592592592597,
+        "n_train": 2159,
+        "n_valid": 540,
+        "overlapping_prompt_ids": 149
+      },
+      {
+        "fold": 2,
+        "balanced_accuracy": 0.18333333333333332,
+        "n_train": 2159,
+        "n_valid": 540,
+        "overlapping_prompt_ids": 147
+      },
+      {
+        "fold": 3,
+        "balanced_accuracy": 0.21296296296296297,
+        "n_train": 2159,
+        "n_valid": 540,
+        "overlapping_prompt_ids": 149
+      },
+      {
+        "fold": 4,
+        "balanced_accuracy": 0.1925925925925926,
+        "n_train": 2160,
+        "n_valid": 539,
+        "overlapping_prompt_ids": 147
+      }
+    ],
+    "provider_accuracy": 0.6617265653945906,
+    "per_class_recall": {
+      "claude-fable-5": 0.006711409395973154,
+      "claude-opus-4-6": 0.4,
+      "claude-opus-4-8": 0.07333333333333333,
+      "claude-opus-5": 0.44666666666666666,
+      "claude-sonnet-5": 0.21333333333333335,
+      "gemini-3.1-pro-preview": 0.7266666666666667,
+      "gemini-3.6-flash": 0.2,
+      "gemini-3.7-flash": 0.18666666666666668,
+      "gemini-3.8-flash": 0.12,
+      "glm-5.3": 0.006666666666666667,
+      "glm-5.3-flash": 0.08666666666666667,
+      "gpt-5.5": 0.23333333333333334,
+      "gpt-5.6-luna": 0.06666666666666667,
+      "gpt-5.6-sol": 0.03333333333333333,
+      "gpt-5.6-terra": 0.06,
+      "gpt-6-astra": 0.49333333333333335,
+      "kimi-k3": 0.12,
+      "qwen3.8-max": 0.2733333333333333
+    }
+  },
+  "elapsed_seconds": 358.6480464935303,
+  "config": {
+    "C": 1,
+    "char_ngram": [
+      1,
+      5
+    ],
+    "char_max_features": 300000,
+    "word_ngram": [
+      1,
+      2
+    ],
+    "style_scale": 0.3,
+    "seed": 42,
+    "folds": 5,
+    "test_features_in_cv": false
+  },
+  "versions": {
+    "python": "3.13.1 (tags/v3.13.1:0671451, Dec  3 2024, 19:06:28) [MSC v.1942 64 bit (AMD64)]",
+    "numpy": "2.2.6",
+    "pandas": "3.0.1",
+    "scipy": "1.18.1",
+    "sklearn": "1.9.1"
+  }
+}
