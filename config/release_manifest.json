@@ -6,6 +6,13 @@
   "contains_model_weights": false,
   "contains_credentials": false,
   "primary_gpu_recipe": "scripts/kaggle_best_two_stage_lora.py",
+  "highest_public_target": {
+    "method": "prvsiyan_prompt_is_not_the_author_v4",
+    "reported_public_balanced_accuracy": 0.604,
+    "notebook_version_url": "https://www.kaggle.com/code/prvsiyan/the-prompt-is-not-the-author?scriptVersionId=360252286",
+    "completed_submission": "57428928",
+    "evidence": "current v10 source quotes historical v4 author claim; historical v4 cells/dependencies not independently retrieved; current v10 is explicitly unscored with branch B disabled"
+  },
   "primary_cpu_recipe": "scripts/kaggle_submit.py",
   "validation": "prompt-grouped balanced accuracy",
   "user_goal": "gold medal",

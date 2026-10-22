@@ -10,6 +10,9 @@ This file separates locally reproduced values from upstream claims and the user'
 | CPU row-softmax blend probe | ~0.39337 | A/B | Fold-held-out diagnostic, not nested retraining |
 | Qwen3-1.7B blend | ~0.431 | C | Upstream notebook note; not reproduced here |
 | Two-stage Qwen3 8B/14B LoRA + public pool | 0.593 grouped CV / 0.592 public LB | B/C | Upstream notebook report; reproduce with the packaged script |
+| Joseph ATLAS + early-layer lineage | ~0.596 public LB | B/C | Public source claim; not reproduced |
+| Kirill Teach-the-Model lineage | ~0.600 public score | B/C | Public source/title claim; not reproduced |
+| prvsiyan historical v4, quoted by current v10 and bound to COMPLETE submission 57428928 | **0.604 public BA** | B/C | Native `scriptVersionId=360252286`; author/source evidence, not reproduced; historical branch-B checkpoint unavailable according to v10 |
 | User-observed current leaderboard leader | ~0.667 | C | User report; exact notebook/version not identified |
 
 ## What a result means

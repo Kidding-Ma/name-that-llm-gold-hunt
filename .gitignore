@@ -45,6 +45,8 @@ env/
 .pytest_cache/
 .mypy_cache/
 .ipynb_checkpoints/
+# Local synthetic fixture directories; never release them
+/.preflight-test-*/
 
 # OS/editor
 .DS_Store

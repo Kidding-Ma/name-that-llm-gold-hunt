@@ -11,16 +11,18 @@
 - Submission: `submission.parquet` with columns `id,model`
 - Local train snapshot: 2,699 rows, 150 prompts, 18 model labels
 - Local `test.csv`: only 3 visible examples; it is **not** the hidden test set
+- Highest source-bound public score found in the audit: historical v4 `0.604` balanced accuracy, quoted by current prvsiyan source and bound to COMPLETE submission `57428928` / [scriptVersionId `360252286`](https://www.kaggle.com/code/prvsiyan/the-prompt-is-not-the-author?scriptVersionId=360252286); historical cells/dependencies were not independently retrieved
 - User-reported current leaderboard leader: approximately `0.667`
-- The exact code behind that score has not been publicly attributed or independently verified
+- The exact code behind the `0.667` score has not been publicly attributed or independently verified
 
 ## What is included
 
-- `scripts/`: Kaggle-ready CPU and GPU inference scripts, preflight checks, and local diagnostics
+- `scripts/`: Kaggle-ready CPU and GPU inference scripts, route-specific preflight checks, and local diagnostics
 - `docs/`: execution runbooks, evidence levels, research status, and public references
 - `evidence/`: small, reproducible metrics and diagnostics only; no raw competition data
 - `config/`: release manifest and public-safety metadata
 - `AI_AGENT_PROMPT.md`: copy this prompt to another AI together with the repository
+- `docs/GPU_GOLD_HUNT_PLAN_ZH.md`: prioritized plan from the 0.592 control through the public 0.604 route and controlled ensemble research
 - `requirements-*.txt`: environment guidance; Kaggle already contains most CPU packages
 
 ## What is intentionally excluded
@@ -39,7 +41,7 @@ The person running this repository must attach the competition data and public m
 
 ### Track A — fastest GPU path
 
-Start with the directly packaged public recipe:
+Use the compact public route as a reproducibility control, then move to the higher-score source target:
 
 1. Open a Kaggle Code Notebook.
 2. Attach the competition data.
@@ -51,7 +53,9 @@ Start with the directly packaged public recipe:
 
 The public author reported grouped CV `0.593` and public LB `0.592`; these are upstream claims, not an independent result from this repository. The script deliberately avoids hidden labels, prompt IDs, and Hungarian assignment.
 
-**Gold-medal workflow:** reproduce this recipe first, submit it, record the real score, then search for newer public versions or add one independently validated model family at a time. A higher local CV without a better Kaggle submission is not progress.
+After the control succeeds, read [`docs/PUBLIC_GPU_ROUTES.md`](docs/PUBLIC_GPU_ROUTES.md). The highest source-bound `0.604` belongs to historical v4, but current v10 explicitly removes unavailable branch B and is **unscored**. First verify all historical dependencies; otherwise use native Joseph 0.596 or a separately named new experiment. The [`preflight`](scripts/prvsiyan_route_preflight.py) screens current metadata only, not v4 completeness or score parity.
+
+**Gold-medal workflow:** reproduce this recipe first, submit it, record the real score, then use the native 0.604 source/version with exact inputs. A higher local CV without a better Kaggle submission is not progress.
 
 Full steps: [`docs/GPU_RUNBOOK_ZH.md`](docs/GPU_RUNBOOK_ZH.md)
 
@@ -66,10 +70,11 @@ Full steps: [`docs/CPU_RUNBOOK_ZH.md`](docs/CPU_RUNBOOK_ZH.md)
 ## Evidence levels
 
 - **A — local reproduction:** saved metrics from the supplied train snapshot and prompt-grouped CV.
-- **B — public implementation:** code or checkpoint is publicly referenced and packaged here, but not independently reproduced locally.
+- **B — public implementation:** public source/code inspected, not necessarily packaged or independently reproduced locally.
 - **C — author report:** upstream notebook comments or leaderboard claims; useful for prioritization, not a guarantee.
+- **D — our Kaggle result:** a recorded full hidden-test submission and its public/private score. No GPU result here has reached D yet.
 
-Do not describe an upstream `0.592`, `0.55`, or the user-observed `0.667` as a locally reproduced score.
+Do not describe the public `0.604`, `0.600`, `0.592`, `0.55`, or the user-observed `0.667` as a locally reproduced score.
 
 ## Validation rules
 

@@ -32,6 +32,10 @@ Expected public dataset contents include the public pool and the `lora8b_v1` / `
 
 Do not copy these assets into GitHub. Large files belong in Kaggle datasets/model inputs or a private artifact store.
 
+## Higher-score public route references
+
+The audit found a source-bound public score claim for [prvsiyan v4](https://www.kaggle.com/code/prvsiyan/the-prompt-is-not-the-author?scriptVersionId=360252286): reported public balanced accuracy `0.604`, COMPLETE submission `57428928`. Its reported extra inputs are listed in [`PUBLIC_GPU_ROUTES.md`](PUBLIC_GPU_ROUTES.md), but they are not bundled here and have not been independently reproduced. Use the native Kaggle notebook/source and inspect every current input version before running.
+
 ## Other references
 
 The repository mentions Qwen, public pools, UltraBERT, DeBERTa, ELECTRA, GPT proxy generations, and Claude API passages only as research references. Each external asset must be checked for:

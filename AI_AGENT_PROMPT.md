@@ -10,8 +10,9 @@ Read these files in order:
 2. `docs/RESEARCH_STATUS.md`
 3. `docs/GPU_RUNBOOK_ZH.md`
 4. `docs/PUBLIC_SOURCES.md`
-5. `evidence/metrics/` JSON files
-6. the selected scripts in `scripts/`
+5. `docs/PUBLIC_GPU_ROUTES.md`
+6. `evidence/metrics/` JSON files
+7. the selected scripts in `scripts/`
 
 Do not assume raw data is in this repository. Attach it from Kaggle or a private/local path.
 
@@ -29,16 +30,22 @@ Do not assume raw data is in this repository. Attach it from Kaggle or a private
 
 ### Verified local CPU result (Evidence A)
 
-The best verified CPU baseline is style-aware four-view TF-IDF + `LinearSVC(C=0.5)`:
+The pure-style CPU control is four-view TF-IDF + `LinearSVC(C=0.5)`:
 
 - raw char n-grams 3–5, max 250k;
 - word/punctuation n-grams 1–3, max 180k, weight 0.7;
 - shape char n-grams 2–6, max 60k, weight 0.5;
 - function-word/punctuation n-grams 1–3, max 50k, weight 0.5;
 - `min_df=2`, sublinear TF, case/Unicode/whitespace/punctuation preserved;
-- 5-fold prompt-grouped OOF balanced accuracy `0.384484`.
+- 5-fold prompt-grouped OOF balanced accuracy `0.384484` (the shipped numeric-style control reaches `0.388936`; see the evidence ledger).
 
 A conservative CPU blend probe is around `0.393`, but it was not a fully nested experiment and must be tested as a separate Kaggle submission.
+
+### Highest credible public score target (Evidence B/C)
+
+The strongest public source found in the audit is [prvsiyan's historical `The Prompt Is Not the Author` v4](https://www.kaggle.com/code/prvsiyan/the-prompt-is-not-the-author?scriptVersionId=360252286). Current v10 source text binds the historical claim `0.604` balanced accuracy to COMPLETE submission `57428928`. This is author/source evidence, not an independent reproduction. The current v10 source also says it is an unscored candidate with the historical branch-B Lightning checkpoint unavailable; it is not v4 parity. Read `docs/PUBLIC_GPU_ROUTES.md` before attempting it.
+
+Do not confuse the public notebook's current v10 page with a guarantee that current code produces the historical v4 score. First reproduce the compact Nishant control, then inspect the native v4 source and verify that branch B and every exact input/version can be mounted legally. If not, use a clearly named new candidate or the Joseph/Kirill routes.
 
 ### Verified public GPU starting point (Evidence B/C)
 
@@ -70,20 +77,24 @@ The upstream notebook reports grouped CV `0.593` and public LB `0.592`. Reproduc
 If the full recipe fails, run these diagnostic variants in separate versions:
 
 - `--only-8b`
+- `--only-14b`
 - `--no-twin`
 - `--no-balance`
 
 Do not silently change several components at once.
 
-### Phase 2 — investigate the gold gap
+### Phase 2 — reproduce the 0.604 public target
 
-If the reproduced score remains far below `0.667`:
+If the compact 0.592 control is working and the score remains far below `0.667`:
 
-1. Search public Kaggle discussions, notebooks, author profiles, and current competition pages for newer solutions.
-2. Prefer solutions with a visible full source, input list, and legal public data.
-3. Build a source table with: method, required inputs, reported CV, reported LB, runtime, GPU memory, license, and reproduction status.
-4. Do not claim that a leaderboard number belongs to a solution unless the link/version proves it.
-5. Compare prediction distributions and per-class recalls, especially Claude, GLM, GPT variants, Kimi, and Qwen.
+1. Read `docs/PUBLIC_GPU_ROUTES.md` and run `scripts/prvsiyan_route_preflight.py`.
+2. Open the native prvsiyan v4 URL and inspect actual cells. Verify historical branch B's Lightning checkpoint and every original dependency before using Copy & Edit; the current four datasets plus Qwen3 8B/14B list does not establish v4 completeness.
+3. Record exact dataset/model/kernel versions, license/attribution, GPU, runtime and output hash before submitting.
+4. Do not claim `0.604` reproduction unless a new full hidden-test submission is generated and scored.
+5. If the route is too large or inputs are unavailable, try Joseph's 0.596 or Kirill's 0.600 public lineage only as separately logged candidates.
+6. Compare prediction distributions and per-class recalls, especially Claude, GLM, GPT variants, Kimi, and Qwen.
+
+The current live/user-reported `0.667` leader still has no public notebook/version/submission binding in this audit.
 
 ### Phase 3 — controlled improvements
 

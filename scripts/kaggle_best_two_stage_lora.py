@@ -1,4 +1,4 @@
-"""Kaggle-ready inference for the strongest directly verified public recipe.
+"""Kaggle-ready inference for the compact public two-stage reproduction control.
 
 Method: Nishant Dahal's "Two-stage LoRA on the public pool" recipe.
 
@@ -34,7 +34,16 @@ Usage as a Python file
 ----------------------
     python kaggle_best_two_stage_lora.py
     python kaggle_best_two_stage_lora.py --only-8b
-    python kaggle_best_two_stage_lora.py --no-twin --no-balance
+    python kaggle_best_two_stage_lora.py --only-14b
+    python kaggle_best_two_stage_lora.py --no-twin
+    python kaggle_best_two_stage_lora.py --no-balance
+    python kaggle_best_two_stage_lora.py --scores-output /private/scores.npz
+
+Score archives are optional, private artifacts: aligned SVC/plain-LoRA
+probabilities, twin weighted-log contributions, pre-balance blend logits,
+final probabilities, IDs/labels and inferred groups. They are not competition
+submissions or OOF estimates; never commit them. Default prediction weights
+and the public recipe are unchanged by score export.
 
 The normal/full recipe is the first command. `--only-8b` is a smoke/ablation
 mode and is not the reported 0.592 blend.
@@ -294,6 +303,29 @@ def fit_ngram_member(train: pd.DataFrame, test: pd.DataFrame, pool: pd.DataFrame
     return softmax(decision)
 
 
+def gpu_memory_plan(estimated_gib: float, free_gib: list[float], reserve_gib: float = 2.5) -> dict[int, float]:
+    """Choose real CUDA capacity, not GPU count; never silently spill to CPU/disk.
+
+    This is a rough weight-only estimate with an activation/merge reserve, not
+    an OOM guarantee. A single 40/48GB card must not be rejected just because
+    it is not a two-T4 Kaggle runtime.
+    """
+    budgets = {i: max(0.0, float(free) - reserve_gib) for i, free in enumerate(free_gib)}
+    budgets = {i: budget for i, budget in budgets.items() if budget > 0}
+    if not budgets:
+        raise RuntimeError("No CUDA memory remains after the activation reserve.")
+    largest = max(budgets, key=budgets.get)
+    if estimated_gib <= budgets[largest]:
+        return {largest: budgets[largest]}
+    if estimated_gib > sum(budgets.values()):
+        raise RuntimeError(
+            f"Trunk estimate {estimated_gib:.1f} GiB exceeds usable CUDA memory "
+            f"{sum(budgets.values()):.1f} GiB after reserves. Use a larger GPU, "
+            "more GPU memory, or --only-8b; CPU/disk offload is not enabled."
+        )
+    return budgets
+
+
 def load_model(base_dir: Path, keep_layers: int, dtype: torch.dtype) -> nn.Module:
     from transformers import AutoConfig, AutoModel
 
@@ -316,14 +348,22 @@ def load_model(base_dir: Path, keep_layers: int, dtype: torch.dtype) -> nn.Modul
     gpu_count = torch.cuda.device_count()
     if gpu_count < 1:
         raise RuntimeError("This two-stage LoRA method needs a CUDA GPU; use kaggle_submit.py for CPU.")
-    if estimated_gib > 13 and gpu_count > 1:
-        max_memory = {i: "13GiB" for i in range(gpu_count)}
-        kwargs = {"config": config, "device_map": "auto", "max_memory": max_memory, "dtype": dtype}
-    elif estimated_gib > 15 and gpu_count == 1:
-        raise RuntimeError(
-            f"Attached {config.hidden_size}-wide trunk needs about {estimated_gib:.1f} GiB; "
-            "use a 2x-T4 Kaggle session."
+    free_gib = []
+    for index in range(gpu_count):
+        free_bytes, total_bytes = torch.cuda.mem_get_info(index)
+        free_gib.append(float(free_bytes) / (2**30))
+        print(
+            f"cuda:{index} {torch.cuda.get_device_name(index)}: "
+            f"free={free_bytes / (2**30):.1f} GiB total={total_bytes / (2**30):.1f} GiB",
+            flush=True,
         )
+    usable = gpu_memory_plan(estimated_gib, free_gib)
+    if len(usable) > 1:
+        max_memory = {index: f"{max(1, int(budget))}GiB" for index, budget in usable.items()}
+        kwargs = {"config": config, "device_map": "auto", "max_memory": max_memory, "dtype": dtype}
+    elif gpu_count > 1:
+        only_index = next(iter(usable))
+        kwargs = {"config": config, "device_map": {"": f"cuda:{only_index}"}, "dtype": dtype}
     else:
         kwargs = {"config": config, "dtype": dtype}
 
@@ -333,7 +373,18 @@ def load_model(base_dir: Path, keep_layers: int, dtype: torch.dtype) -> nn.Modul
         kwargs["torch_dtype"] = kwargs.pop("dtype")
         model = AutoModel.from_pretrained(base_dir, **kwargs)
     if not hasattr(model, "hf_device_map"):
-        model = model.to("cuda:0")
+        target = next(iter(usable))
+        model = model.to(f"cuda:{target}")
+    else:
+        placements = model.hf_device_map.values()
+        if any(str(device).lower() in {"cpu", "disk", "meta"} for device in placements):
+            del model
+            gc.collect()
+            torch.cuda.empty_cache()
+            raise RuntimeError(
+                "Automatic dispatch selected CPU/disk offload; stopping rather than silently "
+                "changing the GPU recipe. Free more CUDA memory or use --only-8b."
+            )
     model.eval()
     if hasattr(model, "norm"):
         model.norm = nn.Identity()
@@ -515,11 +566,31 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--input-dir", type=Path, default=Path("/kaggle/input"))
     parser.add_argument("--output", type=Path, default=Path("/kaggle/working/submission.parquet"))
     parser.add_argument("--metadata", type=Path, default=None)
-    parser.add_argument("--only-8b", action="store_true", help="Ablation/smoke mode; not the reported full blend")
+    parser.add_argument("--only-8b", action="store_true", help="Use only the 8B branch")
+    parser.add_argument("--only-14b", action="store_true", help="Use only the 14B branch")
     parser.add_argument("--no-twin", action="store_true", help="Disable centered twin evidence")
     parser.add_argument("--no-balance", action="store_true", help="Disable Sinkhorn class balancing")
     parser.add_argument("--balance-min-rows", type=int, default=BALANCE_MIN_ROWS)
-    return parser.parse_args(argv)
+    parser.add_argument(
+        "--scores-output",
+        type=Path,
+        default=None,
+        help="Optional private .npz archive of aligned member probabilities; never commit it",
+    )
+    args = parser.parse_args(argv)
+    if args.only_8b and args.only_14b:
+        parser.error("--only-8b and --only-14b are mutually exclusive")
+    if args.balance_min_rows < 1:
+        parser.error("--balance-min-rows must be positive")
+    if args.scores_output is not None and args.scores_output.suffix.lower() != ".npz":
+        parser.error("--scores-output must end in .npz")
+    output = args.output.resolve()
+    metadata = args.metadata.resolve() if args.metadata else output.with_suffix(".json")
+    if output == metadata:
+        parser.error("--metadata must not overwrite the submission")
+    if args.scores_output is not None and args.scores_output.resolve() in {output, metadata}:
+        parser.error("--scores-output must not overwrite the submission or metadata")
+    return args
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -549,11 +620,19 @@ def main(argv: list[str] | None = None) -> None:
     pool = pd.read_parquet(pool_path)
     print(f"train={train.shape}, test={test.shape}, pool={pool.shape}", flush=True)
     logit = np.zeros((len(test), K), dtype=np.float64)
+    score_bank: dict[str, np.ndarray] = {}
     p_svc = fit_ngram_member(train, test, pool)
+    if args.scores_output is not None:
+        score_bank["svc"] = p_svc
     logit += W_SVC * np.log(np.clip(p_svc, 1e-9, 1.0))
 
     groups, twin_rows = topic_clusters(test["text"].tolist())
-    selected = ["lora8b_v1"] if args.only_8b else list(LORA_CONFIG)
+    if args.only_8b:
+        selected = ["lora8b_v1"]
+    elif args.only_14b:
+        selected = ["lora14b_v1"]
+    else:
+        selected = list(LORA_CONFIG)
     for checkpoint_name in selected:
         config = LORA_CONFIG[checkpoint_name]
         checkpoint = find_checkpoint(input_dir, checkpoint_name)
@@ -562,11 +641,17 @@ def main(argv: list[str] | None = None) -> None:
             checkpoint, base, test["text"].tolist(), int(config["bs"])
         )
         plain_logits = features @ heads["plain.weight"].T + heads["plain.bias"]
-        logit += float(config["w"]) * np.log(np.clip(softmax(plain_logits), 1e-9, 1.0))
+        p_member = softmax(plain_logits)
+        if args.scores_output is not None:
+            score_bank[checkpoint_name] = p_member
+        logit += float(config["w"]) * np.log(np.clip(p_member, 1e-9, 1.0))
         if not args.no_twin:
+            before_twin = logit.copy() if args.scores_output is not None else None
             apply_centered_twin(
                 logit, features, heads, groups, twin_rows, float(config["twin_w"])
             )
+            if before_twin is not None:
+                score_bank[checkpoint_name + "_twin_log_contribution"] = logit - before_twin
         print(f"{checkpoint_name} done ({time.time() - started:.0f}s)", flush=True)
         del features, heads
         gc.collect()
@@ -577,6 +662,11 @@ def main(argv: list[str] | None = None) -> None:
         if args.no_balance
         else sinkhorn_balance(logit, max(1, int(args.balance_min_rows)))
     )
+    if args.scores_output is not None:
+        score_bank["blend_logit_before_balance"] = logit
+        score_bank["final_probabilities"] = probabilities
+        score_bank["topic_groups"] = groups
+        score_bank["twin_rows"] = twin_rows
     prediction = np.asarray(LABELS, dtype=object)[probabilities.argmax(axis=1)]
     submission = pd.DataFrame({"id": test["id"].astype(str), "model": prediction.astype(str)})
     submission = submission[["id", "model"]]
@@ -588,13 +678,27 @@ def main(argv: list[str] | None = None) -> None:
     pd.testing.assert_frame_equal(submission, pd.read_parquet(output_path))
 
     metadata_path = args.metadata.resolve() if args.metadata else output_path.with_suffix(".json")
+    if args.scores_output is not None:
+        scores_path = args.scores_output.resolve()
+        scores_path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            scores_path,
+            ids=np.asarray(test["id"].astype(str).tolist(), dtype=str),
+            labels=np.asarray(LABELS),
+            **score_bank,
+        )
+        print(f"private score bank: {scores_path}", flush=True)
     metadata = {
         "method": "two_stage_lora_public_pool_8b_14b_plus_style_svc",
         "public_reference": "https://www.kaggle.com/code/nishantdahal/two-stage-lora-on-the-public-pool",
         "reported_public_lb": 0.592,
         "reported_grouped_cv": 0.593,
         "labels": LABELS,
-        "weights": {"svc": W_SVC, **{k: v["w"] for k, v in LORA_CONFIG.items()}},
+        "selected_checkpoints": selected,
+        "is_full_reference_recipe": not args.only_8b and not args.only_14b and not args.no_twin and not args.no_balance and args.balance_min_rows == BALANCE_MIN_ROWS,
+        "own_hidden_test_score": None,
+        "weights": {"svc": W_SVC, **{k: LORA_CONFIG[k]["w"] for k in selected}},
+        "twin_weights": {k: LORA_CONFIG[k]["twin_w"] if not args.no_twin else 0.0 for k in selected},
         "centered_twin": {
             "enabled": not args.no_twin,
             "threshold": TWIN_THRESH,
@@ -608,6 +712,10 @@ def main(argv: list[str] | None = None) -> None:
             "applied": len(test) >= int(args.balance_min_rows) and not args.no_balance,
         },
         "only_8b": bool(args.only_8b),
+        "only_14b": bool(args.only_14b),
+        "score_bank_written": args.scores_output is not None,
+        "gpu_count": torch.cuda.device_count(),
+        "gpu_names": [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())],
         "train_rows": len(train),
         "test_rows": len(test),
         "pool_rows_loaded": len(pool),
@@ -622,6 +730,7 @@ def main(argv: list[str] | None = None) -> None:
         "uses_hidden_test_labels": False,
         "uses_hungarian_assignment": False,
     }
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
     metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
     print("prediction counts:")
     print(submission["model"].value_counts().to_string())
