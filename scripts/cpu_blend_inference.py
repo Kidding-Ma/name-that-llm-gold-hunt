@@ -10,17 +10,12 @@ This is a candidate, not a hidden-test guarantee. It does not use prompt IDs,
 assignment, test quotas, hidden labels, or manual predictions.
 
 Examples:
-  python cpu_blend_inference.py --dry-run
-  python cpu_blend_inference.py --output submission.parquet
+  python cpu_blend_inference.py --data-dir /private/name-that-llm --dry-run
+  python cpu_blend_inference.py --data-dir /private/name-that-llm --output /private/artifacts/submission.parquet
 """
 from __future__ import annotations
 import argparse, hashlib, json, re, sys, time
 from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[2]
-DEPS = ROOT / "research" / ".deps"
-if DEPS.exists():
-    sys.path.insert(0, str(DEPS))
 
 import numpy as np
 import pandas as pd
@@ -133,8 +128,10 @@ def sha256(path: Path) -> str:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", type=Path, default=ROOT / "data")
-    parser.add_argument("--output", type=Path, default=ROOT / "research" / "evidence" / "cpu_blend_submission.parquet")
+    parser.add_argument("--data-dir", type=Path, required=True,
+                        help="Private directory containing train.csv and test.csv")
+    parser.add_argument("--output", type=Path, required=True,
+                        help="Private output submission.parquet path")
     parser.add_argument("--metadata", type=Path, default=None)
     parser.add_argument("--style-weight", type=float, default=0.70,
                         help="Weight on row-softmaxed style-aware SVC; fold-held-out probe preferred 0.70-0.725")

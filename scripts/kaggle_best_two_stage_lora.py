@@ -396,7 +396,12 @@ def extract_lora_features(
 
     heads = load_file(str(checkpoint_dir / "heads.safetensors"))
     hidden = int(model.config.hidden_size)
-    head_device = model.get_input_embeddings().weight.device
+    # With device_map sharding the embedding is normally on cuda:0, while the
+    # final decoder block can be on another GPU. Inputs must start at the
+    # embedding device; pooled hidden states are explicitly moved there before
+    # applying the head weights.
+    input_device = model.get_input_embeddings().weight.device
+    head_device = input_device
     norms = nn.ModuleList([nn.LayerNorm(hidden) for _ in layers]).to(head_device).float()
     norms.load_state_dict({key[len("norms."):]: value for key, value in heads.items() if key.startswith("norms.")})
 

@@ -2,7 +2,7 @@
 
 > GPU-ready handoff repository for the Kaggle **Name That LLM** competition.
 >
-> 目标：把可复现的 CPU 基线、已核对的公开 GPU 方案、实验结论和交接提示词集中到一个小型公开仓库，交给有 GPU 的同学或 AI 继续冲击金牌。
+> 目标：把可复现的 CPU 基线、已核对来源和输入的公开 GPU 起点、实验结论和交接提示词集中到一个小型公开仓库，交给有 GPU 的同学或 AI 继续冲击金牌。
 
 ## 重要事实
 

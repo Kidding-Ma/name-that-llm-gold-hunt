@@ -70,5 +70,5 @@ for pattern in [
     hs = files(pattern)
     print(" OK" if hs else " MISSING", pattern, hs[:2])
 
-print("\nIf several lines say MISSING, do not run the full notebook yet.")
-print("Add the missing sources listed in KAGGLE_LORA_SUBMIT_GUIDE_zh.md, then rerun this check.")
+print("\nIf several lines say MISSING, do not run an experimental notebook yet.")
+print("For the primary public recipe, follow docs/GPU_RUNBOOK_ZH.md and attach only its documented inputs.")

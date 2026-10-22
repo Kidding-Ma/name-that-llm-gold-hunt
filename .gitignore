@@ -1,7 +1,11 @@
 # Competition data and local archives
-/data/
+/data/*
+!/data/README.md
 *.csv
 *.parquet
+# Keep the two public placeholder READMEs trackable despite broad patterns.
+!data/README.md
+!artifacts/README.md
 *.zip
 *.7z
 *.rar
@@ -17,7 +21,8 @@
 
 # Local outputs and experiment artifacts
 outputs/
-artifacts/
+/artifacts/*
+!/artifacts/README.md
 checkpoints/
 runs/
 logs/

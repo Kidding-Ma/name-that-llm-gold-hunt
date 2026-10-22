@@ -9,5 +9,11 @@
   "primary_cpu_recipe": "scripts/kaggle_submit.py",
   "validation": "prompt-grouped balanced accuracy",
   "user_goal": "gold medal",
-  "upstream_0_667_attribution_verified": false
+  "upstream_0_667_attribution_verified": false,
+  "external_inputs": [
+    "name-that-llm",
+    "nishantdahal/ntl-two-stage-lora",
+    "Qwen3 8B Base Transformers",
+    "Qwen3 14B Base Transformers"
+  ]
 }

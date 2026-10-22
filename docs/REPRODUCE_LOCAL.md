@@ -15,13 +15,21 @@ python -m venv .venv
 python -m pip install -r requirements-cpu.txt
 ```
 
-Run the audit:
+Run the audit with explicit private paths:
 
 ```powershell
-python scripts/audit_dataset.py
+python scripts/audit_dataset.py --data-dir D:/private/name-that-llm-data --output-dir D:/private/name-that-llm-artifacts/audit
 ```
 
-The audit script currently expects the original project layout (`data/train.csv` and `research/evidence`). For the public release, use it as a source reference or adapt the `DATA` and `OUT` paths to your private input/output directories rather than copying data into Git.
+The public scripts accept explicit private input/output paths. For example:
+
+```bash
+python scripts/audit_dataset.py --data-dir /private/name-that-llm --output-dir /private/artifacts/audit
+python scripts/style_aware_runner.py --data-dir /private/name-that-llm --output-dir /private/artifacts/style
+python scripts/final_inference.py --data-dir /private/name-that-llm --output /private/artifacts/submission.parquet
+```
+
+Keep the data and generated outputs outside the Git repository. The visible local `test.csv` has only three examples and is a schema smoke test, not the hidden leaderboard test.
 
 For a simple local full fit, adapt the path arguments of `final_inference.py`:
 

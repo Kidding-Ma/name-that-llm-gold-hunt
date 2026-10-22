@@ -10,7 +10,6 @@ TFIDF_C_CTR, TFIDF_MAXF_CTR = 3.0, 30000
 LLM_LAYERS = [17, 20]               # mean-pooled hidden states of Qwen3-1.7B-Base (28 layers)
 LLM_C = 0.005
 LLM_C_CTR = 0.002
-LLM_HF_ID = 'Qwen/Qwen3-1.7B-Base'  # local fallback when no Kaggle input is attached
 W_TFIDF, W_LAYER = 1.082, {17: 0.352, 20: 0.356}   # log-prob blend weights, fit out-of-fold (CV 0.431)
 
 import glob
@@ -106,12 +105,16 @@ print(f'tfidf done ({time.time() - T0:.0f}s)', flush=True)
 def find_model_dir():
     for cfg in sorted(glob.glob('/kaggle/input/**/config.json', recursive=True)):
         try:
-            c = json.load(open(cfg))
+            with open(cfg, encoding='utf-8') as handle:
+                c = json.load(handle)
         except Exception:
             continue
         if c.get('model_type') == 'qwen3' and c.get('hidden_size') == 2048 and c.get('num_hidden_layers') == 28:
             return os.path.dirname(cfg)
-    return LLM_HF_ID
+    raise FileNotFoundError(
+        'No attached local Qwen3-1.7B Transformers input found under /kaggle/input. '
+        'Attach the model input; this release does not download weights at runtime.'
+    )
 
 
 @torch.no_grad()
@@ -166,6 +169,8 @@ print(f'llm heads done ({time.time() - T0:.0f}s)', flush=True)
 pred = logit.argmax(1)
 sub = pd.DataFrame({'id': test['id'], 'model': [LABELS[i] for i in pred]})
 assert sub['id'].is_unique and sub['model'].isin(LABELS).all() and len(sub) == len(test)
-sub.to_parquet('submission.parquet', index=False)
+output_path = pathlib.Path('/kaggle/working/submission.parquet')
+sub.to_parquet(output_path, index=False)
 print(sub['model'].value_counts().to_string())
+print('submission:', output_path)
 print(f'total {time.time() - T0:.0f}s')
