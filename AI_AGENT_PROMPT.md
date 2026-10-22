@@ -1,145 +1,116 @@
-# Prompt for the next AI / GPU algorithm engineer
+# GPU handoff prompt — Name That LLM
 
-You are a senior Kaggle algorithm engineer taking over a public repository for the competition **Name That LLM**. The user's objective is to win a gold medal, not merely to produce a plausible local CV number.
+You are taking over the public repository for **Name That LLM**. Your job is to obtain a real, legal Kaggle score and improve it with evidence. Do not optimize for a plausible local CV number or claim an upstream score as your own.
 
-## Start here
+## Read these first
 
-Read these files in order:
+Read these files in this order:
 
-1. `README.md`
-2. `docs/RESEARCH_STATUS.md`
-3. `docs/GPU_RUNBOOK_ZH.md`
-4. `docs/PUBLIC_SOURCES.md`
-5. `docs/PUBLIC_GPU_ROUTES.md`
-6. `evidence/metrics/` JSON files
-7. the selected scripts in `scripts/`
+1. [`README.md`](README.md)
+2. [`docs/RESEARCH_STATUS.md`](docs/RESEARCH_STATUS.md)
+3. [`docs/GPU_RUNBOOK_ZH.md`](docs/GPU_RUNBOOK_ZH.md)
+4. [`docs/PUBLIC_GPU_ROUTES.md`](docs/PUBLIC_GPU_ROUTES.md)
+5. [`scripts/kaggle_best_two_stage_lora.py`](scripts/kaggle_best_two_stage_lora.py)
+6. [`scripts/prvsiyan_route_preflight.py`](scripts/prvsiyan_route_preflight.py)
 
-Do not assume raw data is in this repository. Attach it from Kaggle or a private/local path.
+Read `evidence/metrics/` only when you need the CPU controls. Do not assume competition data, checkpoints or weights are in this repository.
 
-## Competition facts
+## Facts that control your decisions
 
-- Competition: https://www.kaggle.com/competitions/name-that-llm
-- Metric: 18-class balanced accuracy
-- Required output: `submission.parquet` with exactly `id,model`
-- Training snapshot: 2,699 labeled rows, 150 prompts, 18 labels
-- The same prompt appears with multiple model responses. Validation must be grouped by `prompt_id`.
-- Local test examples are only three rows and are not the hidden test.
-- User observed a current leaderboard leader near `0.667`; no public artifact has been verified as the source of that exact score.
+- Task: classify 18 model labels; metric: balanced accuracy.
+- Submission: `submission.parquet` with exactly `id,model`, in test-row order.
+- The visible local test has only 3 rows. It is a schema check, not the leaderboard test.
+- Validation must split by `prompt_id`; random-row CV is not acceptable as the main estimate.
+- Best public **source claim found**: historical prvsiyan v4, `0.604`, linked to COMPLETE submission `57428928` and [`scriptVersionId=360252286`](https://www.kaggle.com/code/prvsiyan/the-prompt-is-not-the-author?scriptVersionId=360252286). This is not independently reproduced here.
+- Current prvsiyan v10 is explicitly an **unscored** candidate: it disables historical branch B because its Lightning checkpoint is unavailable. Do not call v10, a branch-A port, or an ATLAS/Gaussian remix a `0.604` reproduction.
+- Nishant's compact two-stage LoRA route reports `0.592` public LB / `0.593` grouped CV upstream. It is the first executable control in this repository.
+- The user-reported `0.667` leader has no verified public code, version or submission mapping.
 
-## Current evidence
+## Required execution order
 
-### Verified local CPU result (Evidence A)
+### 1. Establish a GPU and input baseline
 
-The pure-style CPU control is four-view TF-IDF + `LinearSVC(C=0.5)`:
+1. Prefer Kaggle GPU before renting hardware; use 2×T4 for the compact route when available.
+2. Attach the `name-that-llm` competition data, `nishantdahal/ntl-two-stage-lora`, and Qwen3 8B/14B Transformers inputs.
+3. Run [`scripts/prvsiyan_route_preflight.py`](scripts/prvsiyan_route_preflight.py) only when auditing the larger public route. It checks current mounts, CUDA, CSV structure, adapter markers and Qwen dimensions. It does **not** prove historical v4 completeness, licenses, model contents or score parity.
+4. If there is no CUDA, run only the CPU control; do not claim GPU progress.
 
-- raw char n-grams 3–5, max 250k;
-- word/punctuation n-grams 1–3, max 180k, weight 0.7;
-- shape char n-grams 2–6, max 60k, weight 0.5;
-- function-word/punctuation n-grams 1–3, max 50k, weight 0.5;
-- `min_df=2`, sublinear TF, case/Unicode/whitespace/punctuation preserved;
-- 5-fold prompt-grouped OOF balanced accuracy `0.384484` (the shipped numeric-style control reaches `0.388936`; see the evidence ledger).
+### 2. Run the compact control unchanged
 
-A conservative CPU blend probe is around `0.393`, but it was not a fully nested experiment and must be tested as a separate Kaggle submission.
+Run [`scripts/kaggle_best_two_stage_lora.py`](scripts/kaggle_best_two_stage_lora.py) with the default command first. Do not change weights or several switches at once.
 
-### Highest credible public score target (Evidence B/C)
+Before submitting, verify:
 
-The strongest public source found in the audit is [prvsiyan's historical `The Prompt Is Not the Author` v4](https://www.kaggle.com/code/prvsiyan/the-prompt-is-not-the-author?scriptVersionId=360252286). Current v10 source text binds the historical claim `0.604` balanced accuracy to COMPLETE submission `57428928`. This is author/source evidence, not an independent reproduction. The current v10 source also says it is an unscored candidate with the historical branch-B Lightning checkpoint unavailable; it is not v4 parity. Read `docs/PUBLIC_GPU_ROUTES.md` before attempting it.
+- the test row count is the full Kaggle hidden-test input, not the local 3-row file;
+- columns are exactly `id,model`;
+- IDs are unique and remain in test order;
+- every prediction is one of the 18 labels;
+- prediction counts are not accidentally concentrated in one class;
+- no hidden labels, prompt IDs, Hungarian matching or assumed class quotas were used.
 
-Do not confuse the public notebook's current v10 page with a guarantee that current code produces the historical v4 score. First reproduce the compact Nishant control, then inspect the native v4 source and verify that branch B and every exact input/version can be mounted legally. If not, use a clearly named new candidate or the Joseph/Kirill routes.
+Save a Kaggle notebook version, submit the file, and record the actual public/private score. For diagnostics, use separate notebook versions:
 
-### Verified public GPU starting point (Evidence B/C)
+```text
+--only-8b
+--only-14b
+--no-twin
+--no-balance
+```
 
-`scripts/kaggle_best_two_stage_lora.py` packages the public two-stage LoRA-on-public-pool recipe:
+The optional `--scores-output path.npz` is for private aligned member/logit analysis only. It is not OOF, not a submission, and must not be committed.
 
-- official train plus a public pool of roughly 34,940 passages;
-- style-aware SVC;
-- Qwen3 8B and 14B LoRA adapters;
-- centered twins on test content clusters of size 2–18;
-- optional Sinkhorn class balancing;
-- no prompt IDs, hidden labels, or Hungarian assignment.
+### 3. Only after the control, inspect the 0.604 route
 
-The upstream notebook reports grouped CV `0.593` and public LB `0.592`. Reproduce it before modifying it. Prefer 2×T4. Use the preflight script if inputs are unclear.
+Open the native [prvsiyan v4 source](https://www.kaggle.com/code/prvsiyan/the-prompt-is-not-the-author?scriptVersionId=360252286) and inspect its actual cells and inputs before using Copy & Edit.
 
-## Immediate mission
+Proceed as a v4 reproduction only if all of the following are true:
 
-### Phase 1 — reproduce and submit
+- historical branch B's exact Lightning checkpoint is available and legally usable;
+- every original dataset/model/kernel-output version is identified;
+- licenses and competition-rule compatibility are recorded;
+- the native source runs on the full hidden test;
+- a new Kaggle submission receives a score.
 
-1. Create/copy a Kaggle Code Notebook.
-2. Attach `name-that-llm` competition data.
-3. Attach `nishantdahal/ntl-two-stage-lora`.
-4. Attach Qwen3 8B Base and Qwen3 14B Base Transformers models.
-5. Use preferably 2×T4, internet off if all inputs are attached.
-6. Run `scripts/kaggle_best_two_stage_lora.py`.
-7. Verify test row count, ID order, legal labels, and prediction counts.
-8. Save a version and submit.
-9. Record: notebook version, runtime, GPU type, public score, private score if visible, and output hash.
+If branch B or another dependency is unavailable, stop calling the run v4. Run Joseph's reported `0.596` route or Kirill's reported `0.600` route as separately named candidates, or label a new branch-A/Gaussian/ATLAS experiment as unscored.
 
-If the full recipe fails, run these diagnostic variants in separate versions:
+### 4. Improve only after a real baseline score
 
-- `--only-8b`
-- `--only-14b`
-- `--no-twin`
-- `--no-balance`
+Add one change at a time and save private member logits. Use prompt-grouped outer validation and fit blend weights/calibration only on the training side. Reasonable candidates are:
 
-Do not silently change several components at once.
+- an independently trained embedding or LoRA member;
+- public-pool filtering and prompt-overlap checks;
+- family-specific gates with prompt-balanced training data;
+- centered twins or Sinkhorn only after pseudo-test stress tests;
+- calibrated logit blending selected with nested grouped validation.
 
-### Phase 2 — reproduce the 0.604 public target
+Do not repeatedly tune weights on one OOF matrix. A higher local CV is not a leaderboard improvement until a new full-test submission confirms it.
 
-If the compact 0.592 control is working and the score remains far below `0.667`:
+## Hard restrictions
 
-1. Read `docs/PUBLIC_GPU_ROUTES.md` and run `scripts/prvsiyan_route_preflight.py`.
-2. Open the native prvsiyan v4 URL and inspect actual cells. Verify historical branch B's Lightning checkpoint and every original dependency before using Copy & Edit; the current four datasets plus Qwen3 8B/14B list does not establish v4 completeness.
-3. Record exact dataset/model/kernel versions, license/attribution, GPU, runtime and output hash before submitting.
-4. Do not claim `0.604` reproduction unless a new full hidden-test submission is generated and scored.
-5. If the route is too large or inputs are unavailable, try Joseph's 0.596 or Kirill's 0.600 public lineage only as separately logged candidates.
-6. Compare prediction distributions and per-class recalls, especially Claude, GLM, GPT variants, Kimi, and Qwen.
+- Never add competition data, hidden labels, weights, adapters, pools, tokens or raw notebook blobs to this repository.
+- Never manually label hidden test rows.
+- Never assume every hidden prompt contains one row per model.
+- Never use Hungarian assignment or hidden-test quotas by default.
+- Never present `0.604`, `0.600`, `0.592` or `0.667` as your own result without a matching run record.
+- Do not delete or overwrite the caller's private source workspace.
 
-The current live/user-reported `0.667` leader still has no public notebook/version/submission binding in this audit.
+## Required run report
 
-### Phase 3 — controlled improvements
+For every Kaggle run, report:
 
-Only add one family at a time and save logits:
+```text
+status: PASS / BLOCKED
+code commit or notebook version:
+command/variant:
+GPU and runtime:
+input identifiers and versions:
+license/attribution check:
+train/test/pool hashes where possible:
+submission hash and row count:
+public score:
+private score:
+change from previous run:
+exact blocker and next action (if blocked):
+```
 
-1. better public pool filtering and deduplication;
-2. a frozen Qwen/DeBERTa/ELECTRA embedding head;
-3. a second independent LoRA adapter;
-4. family-specific gates trained only on data with topic-balanced prompts;
-5. centered twins with pseudo-test stress tests;
-6. calibrated or constrained postprocessing only if it is validated on many pseudo-test draws.
-
-For every candidate, use prompt-grouped outer folds and inner selection of hyperparameters/weights. Do not optimize on one OOF matrix repeatedly.
-
-## Red lines
-
-- Never upload or commit competition data, hidden data, model weights, adapters, or tokens to this repository.
-- Never use hidden test labels or manually label test rows.
-- Never use random-row CV as the main score.
-- Never force one of each model per hidden prompt unless the competition contract proves that assumption and pseudo-test simulations support it.
-- Never treat a binary AI detector metric as 18-class identity accuracy.
-- Never report an upstream claim as a local reproduction.
-- Do not delete or overwrite source data in the caller's workspace.
-
-## Deliverables expected from your work
-
-For each run, save a small metadata JSON outside the public repository or in a private artifact store containing:
-
-- code commit/version;
-- input dataset/model/checkpoint names and versions;
-- SHA-256 hashes where possible;
-- GPU type and runtime;
-- fold protocol and score;
-- submission file hash and row count;
-- public/private leaderboard score;
-- exact changes from the previous run.
-
-Update `docs/RESEARCH_STATUS.md` only with facts that can be checked. If you find a stronger public solution, add its URL and input list to `docs/PUBLIC_SOURCES.md` and add a short reproduction note.
-
-## Definition of success
-
-The job is not complete when code runs. It is complete when:
-
-1. a legal full-test submission is generated;
-2. the score is recorded;
-3. the method is reproducible by another engineer;
-4. improvements are supported by held-out evidence or repeated leaderboard tests;
-5. all public-repository changes remain free of data, credentials, and large binaries.
+Update [`docs/RESEARCH_STATUS.md`](docs/RESEARCH_STATUS.md) only with checkable facts. A task is complete only when a legal full-test submission, its score, reproducible inputs/code and the evidence record all exist.
