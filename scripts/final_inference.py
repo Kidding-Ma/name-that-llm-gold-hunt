@@ -137,7 +137,7 @@ def main() -> None:
     metadata_path = args.metadata.resolve() if args.metadata else output.with_suffix(".json")
     metadata_path.write_text(json.dumps({
         "recipe": "char35_styletext_plus_numeric_style__svc_0p5",
-        "data_dir_recorded": false, "output_path_recorded": false,
+        "data_dir_recorded": False, "output_path_recorded": False,
         "train_sha256": sha256(train_path), "test_sha256": sha256(test_path),
         "output_sha256": sha256(output), "train_rows": len(train),
         "test_rows": len(test), "columns": submission.columns.tolist(),

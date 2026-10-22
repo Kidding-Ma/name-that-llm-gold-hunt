@@ -60,18 +60,29 @@ class CliTests(unittest.TestCase):
         self.parse = helpers()["parse_args"]
 
     def test_default_recipe_is_unchanged(self) -> None:
-        args = self.parse([])
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as caught:
+                self.parse([])
+        self.assertEqual(caught.exception.code, 2)
+        args = self.parse(["--no-twin", "--no-balance"])
         self.assertFalse(args.only_8b)
         self.assertFalse(args.only_14b)
-        self.assertFalse(args.no_twin)
-        self.assertFalse(args.no_balance)
+        self.assertTrue(args.no_twin)
+        self.assertTrue(args.no_balance)
+        self.assertFalse(args.allow_transductive)
         self.assertIsNone(args.scores_output)
         self.assertEqual(args.balance_min_rows, 50)
 
     def test_only_14b_is_available(self) -> None:
-        args = self.parse(["--only-14b"])
+        args = self.parse(["--only-14b", "--no-twin", "--no-balance"])
         self.assertTrue(args.only_14b)
         self.assertFalse(args.only_8b)
+
+    def test_transductive_reference_requires_explicit_opt_in(self) -> None:
+        args = self.parse(["--allow-transductive"])
+        self.assertTrue(args.allow_transductive)
+        self.assertFalse(args.no_twin)
+        self.assertFalse(args.no_balance)
 
     def test_member_selectors_are_mutually_exclusive(self) -> None:
         with contextlib.redirect_stderr(io.StringIO()):
@@ -81,7 +92,7 @@ class CliTests(unittest.TestCase):
 
     def test_optional_private_scores_path(self) -> None:
         target = Path("private-experiment") / "scores.npz"
-        args = self.parse(["--scores-output", str(target)])
+        args = self.parse(["--scores-output", str(target), "--no-twin", "--no-balance"])
         self.assertEqual(args.scores_output, target)
 
     def test_invalid_output_arguments_are_rejected(self) -> None:

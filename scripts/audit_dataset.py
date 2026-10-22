@@ -44,6 +44,8 @@ def main() -> None:
                         help="Private directory containing train.csv and test.csv")
     parser.add_argument("--output-dir", type=Path, required=True,
                         help="Private output directory for compact audit files")
+    parser.add_argument("--external-pool", type=Path, default=None,
+                        help="Optional private pool parquet for overlap/label conflict checks")
     args = parser.parse_args()
     data_dir = args.data_dir.resolve()
     output_dir = args.output_dir.resolve()
@@ -98,9 +100,33 @@ def main() -> None:
     component_sizes = components.value_counts()
     groups = components.groupby(components).groups.values()
 
+    external_report = {"checked": False, "reason": "not_requested"}
+    if args.external_pool is not None:
+        pool = pd.read_parquet(args.external_pool)
+        if not {"text", "model"}.issubset(pool.columns):
+            raise ValueError("external pool must contain text and model columns")
+        pool = pool[["text", "model"]].copy()
+        pool["text"] = pool["text"].fillna("").astype(str)
+        pool["model"] = pool["model"].astype(str)
+        train_text_to_labels = train.groupby(train["text"].astype(str))["model"].agg(lambda s: set(s.astype(str))).to_dict()
+        overlap_train = pool["text"].map(lambda x: x in train_text_to_labels)
+        conflicts = int(sum(bool(train_text_to_labels.get(text, set()) - {label}) for text, label in zip(pool["text"], pool["model"])))
+        external_report = {
+            "checked": True,
+            "rows": int(len(pool)),
+            "labels": sorted(pool["model"].unique().tolist()),
+            "empty_text_rows": int((pool["text"].str.strip() == "").sum()),
+            "exact_overlap_with_train": int(overlap_train.sum()),
+            "conflicting_exact_labels_with_train": conflicts,
+            "exact_overlap_with_test": int(pool["text"].isin(set(test["text"].astype(str))).sum()),
+            "near_duplicates_checked": False,
+        }
+        if conflicts:
+            raise ValueError("external pool has exact text/label conflicts with official train")
+
     report = {
         "python": sys.version,
-        "data_dir_recorded": false,
+        "data_dir_recorded": False,
         "train": {
             "rows": int(len(train)),
             "columns": train.columns.tolist(),
@@ -144,6 +170,7 @@ def main() -> None:
             "cross_prompt_components": int(sum(train.loc[idx, "prompt_id"].nunique() > 1 for idx in groups)),
             "cross_model_components": int(sum(train.loc[idx, "model"].nunique() > 1 for idx in groups)),
         },
+        "external_pool": external_report,
         "contract": {
             "hidden_test_prompt_id_available": False,
             "submission_columns": ["id", "model"],

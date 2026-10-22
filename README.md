@@ -7,23 +7,49 @@
 ## 重要事实
 
 - Competition: [Name That LLM](https://www.kaggle.com/competitions/name-that-llm)
-- Metric: 18-class **Balanced Accuracy Score**
-- Submission: `submission.parquet` with columns `id,model`
-- Local train snapshot: 2,699 rows, 150 prompts, 18 model labels
-- Local `test.csv`: only 3 visible examples; it is **not** the hidden test set
-- Highest source-bound public score found in the audit: historical v4 `0.604` balanced accuracy, quoted by current prvsiyan source and bound to COMPLETE submission `57428928` / [scriptVersionId `360252286`](https://www.kaggle.com/code/prvsiyan/the-prompt-is-not-the-author?scriptVersionId=360252286); historical cells/dependencies were not independently retrieved
-- User-reported current leaderboard leader: approximately `0.667`
-- The exact code behind the `0.667` score has not been publicly attributed or independently verified
+- Official metadata endpoint: [CompetitionService/GetCompetition](https://www.kaggle.com/api/i/competitions.CompetitionService/GetCompetition?competitionName=name-that-llm), fetched 2026-10-22 Asia/Shanghai. It reports the task description, maximized **Balanced Accuracy Score**, required `submission.parquet`, kernel-only submissions, a 2027-01-14 UTC deadline, 5 maximum daily submissions, and 540-minute CPU/GPU limits. Re-fetch before a final submission.
+- Local snapshot schema: `train.csv` has `id,prompt_id,text,model`; `test.csv` has `id,text`.
+- Local train snapshot: 2,699 rows, 150 prompts, 18 model labels.
+- Local `test.csv`: only 3 visible examples; it is **not** the hidden test set.
+- The full context, evidence labels, official links, and unresolved unknowns are in [`docs/COMPETITION_CONTEXT.md`](docs/COMPETITION_CONTEXT.md).
+- Highest source-bound public score found in the audit: historical v4 `0.604` balanced accuracy, quoted by current prvsiyan source and bound to COMPLETE submission `57428928` / [scriptVersionId `360252286`](https://www.kaggle.com/code/prvsiyan/the-prompt-is-not-the-author?scriptVersionId=360252286); historical cells/dependencies were not independently retrieved.
+- User-reported current leaderboard leader: approximately `0.667`; exact code/version is not publicly attributed or independently verified here.
+
+## New AI quickstart (SSH Linux GPU server)
+
+Give the next AI this repository URL and SSH access to a Linux GPU server. Claude Code should read [`CLAUDE.md`](CLAUDE.md) first; [`AI_AGENT_PROMPT.md`](AI_AGENT_PROMPT.md) is the detailed handoff, not a substitute for the project instructions.
+
+**Do not run an expensive download, GPU job, or Kaggle submission automatically.** First revalidate the current rules/data and explicitly record the input versions, licenses, and experiment plan. The commands below are an engineering smoke path only; the default public recipe includes transductive/test-batch operations and must be treated as a named hypothesis, not a neutral baseline.
+
+```bash
+git status --short
+python scripts/release_audit.py
+python -m unittest discover -s tests -v
+```
+
+For an authorized private Linux GPU environment, after reviewing the runbook and confirming Kaggle access:
+
+```bash
+export DATA_ROOT="$HOME/name-that-llm-data"
+bash scripts/setup_gpu_env.sh --data-root "$DATA_ROOT" --download
+source "$DATA_ROOT/.venv/bin/activate"
+bash scripts/check_gpu_env.sh --data-root "$DATA_ROOT" --strict
+# Run only after confirming the exact input versions and experiment record.
+bash scripts/run_gpu_control.sh --data-root "$DATA_ROOT"
+```
+
+The setup downloads and verifies compact inputs, writes data/output/logs outside GitHub, and records a private manifest; it does not itself run inference. Run `run_gpu_control.sh` only after the explicit side-effect/owner approval gate in [`CLAUDE.md`](CLAUDE.md). Full details are in [`docs/REMOTE_GPU_RUNBOOK.md`](docs/REMOTE_GPU_RUNBOOK.md), [`docs/KAGGLE_DOWNLOADS.md`](docs/KAGGLE_DOWNLOADS.md), and [`docs/INPUT_LAYOUT.md`](docs/INPUT_LAYOUT.md).
+
+**One unavoidable prerequisite:** GitHub SSH does not provide Kaggle access. The server must have a Kaggle API token (`KAGGLE_API_TOKEN` or `KAGGLE_CONFIG_DIR/kaggle.json`) and the account must have accepted the competition rules before missing inputs can be downloaded. If inputs are already staged, the token is not needed for verification. The repository never contains or prints credentials.
 
 ## What is included
 
-- `scripts/`: Kaggle-ready CPU and GPU inference scripts, route-specific preflight checks, and local diagnostics
-- `docs/`: execution runbooks, evidence levels, research status, and public references
+- `scripts/`: Kaggle-ready CPU/GPU inference, input download/verification, server preflight, bootstrap, and one-command runner
+- `docs/`: remote-server runbook, Kaggle download/auth instructions, exact input tree, troubleshooting, experiment log, evidence and public references
 - `evidence/`: small, reproducible metrics and diagnostics only; no raw competition data
-- `config/`: release manifest and public-safety metadata
-- `AI_AGENT_PROMPT.md`: copy this prompt to another AI together with the repository
-- `docs/GPU_GOLD_HUNT_PLAN_ZH.md`: prioritized plan from the 0.592 control through the public 0.604 route and controlled ensemble research
-- `requirements-*.txt`: environment guidance; Kaggle already contains most CPU packages
+- `config/`: release manifest and compact-route input manifest
+- `AI_AGENT_PROMPT.md`: concise instructions for the next AI
+- `requirements-*.txt`: CPU, Kaggle GPU, and private-server dependency guidance
 
 ## What is intentionally excluded
 
@@ -37,25 +63,19 @@ The public repository does **not** contain:
 
 The person running this repository must attach the competition data and public model/checkpoint inputs in Kaggle or another GPU environment.
 
-## Recommended attack order
+## Research tracks (neutral order)
 
-### Track A — fastest GPU path
+### Track A — baseline ladder
 
-Use the compact public route as a reproducibility control, then move to the higher-score source target:
+1. Revalidate the current official rules, data page, sample submission, and input permissions.
+2. Run schema/duplicate/provenance audits and freeze the validation protocol.
+3. Establish a constant/sanity control and a simple CPU text baseline.
+4. Compare one GPU representation at a time under the same folds and budget.
+5. Only then evaluate external pools, pretrained checkpoints, transductive operations, or upstream notebooks as separately named hypotheses.
 
-1. Open a Kaggle Code Notebook.
-2. Attach the competition data.
-3. Attach dataset `nishantdahal/ntl-two-stage-lora`.
-4. Attach Qwen3 8B Base and Qwen3 14B Base Transformers model inputs.
-5. Select preferably **2×T4**.
-6. Paste/run [`scripts/kaggle_best_two_stage_lora.py`](scripts/kaggle_best_two_stage_lora.py).
-7. Save the version and submit the generated `/kaggle/working/submission.parquet`.
+The repository packages public GPU routes as optional candidates, not conclusions. The compact script's default independent control is `--no-twin --no-balance`; `--allow-transductive` explicitly enables test-batch clustering and uniform-prior balancing and requires rule review plus pseudo-test stress tests. Do not submit any variant until the owner approves the run plan and the full-test/schema gates pass.
 
-The public author reported grouped CV `0.593` and public LB `0.592`; these are upstream claims, not an independent result from this repository. The script deliberately avoids hidden labels, prompt IDs, and Hungarian assignment.
-
-After the control succeeds, read [`docs/PUBLIC_GPU_ROUTES.md`](docs/PUBLIC_GPU_ROUTES.md). The highest source-bound `0.604` belongs to historical v4, but current v10 explicitly removes unavailable branch B and is **unscored**. First verify all historical dependencies; otherwise use native Joseph 0.596 or a separately named new experiment. The [`preflight`](scripts/prvsiyan_route_preflight.py) screens current metadata only, not v4 completeness or score parity.
-
-**Gold-medal workflow:** reproduce this recipe first, submit it, record the real score, then use the native 0.604 source/version with exact inputs. A higher local CV without a better Kaggle submission is not progress.
+Upstream score claims and their source versions are recorded in [`docs/PUBLIC_GPU_ROUTES.md`](docs/PUBLIC_GPU_ROUTES.md). They are evidence for experiment prioritization only, never local results or guarantees.
 
 Full steps: [`docs/GPU_RUNBOOK_ZH.md`](docs/GPU_RUNBOOK_ZH.md)
 
@@ -89,7 +109,7 @@ Every new experiment must:
 
 ## Repository handoff
 
-The next AI should read [`AI_AGENT_PROMPT.md`](AI_AGENT_PROMPT.md) first, then [`docs/RESEARCH_STATUS.md`](docs/RESEARCH_STATUS.md), and execute the GPU runbook before inventing a new architecture.
+Claude Code should read [`CLAUDE.md`](CLAUDE.md) first, then [`AI_AGENT_PROMPT.md`](AI_AGENT_PROMPT.md) and [`docs/RESEARCH_STATUS.md`](docs/RESEARCH_STATUS.md). It must revalidate current facts and obtain owner approval before downloading, launching costly GPU work, saving a Kaggle version, or submitting.
 
 ## License and provenance
 

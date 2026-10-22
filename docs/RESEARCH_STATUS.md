@@ -38,7 +38,7 @@ The CPU style-aware model is strong on some providers but weak on fine-grained l
 - weak: `claude-fable-5` 0.107, `glm-5.3` 0.16, `glm-5.3-flash` 0.22, `gpt-5.6-sol` 0.18, `kimi-k3` 0.28;
 - provider recall: Google 0.967, OpenAI 0.763, Anthropic 0.694, Qwen 0.467, ZAI 0.387, Moonshot AI 0.280.
 
-The next model should add transferable representation and within-family discrimination rather than only more ordinary word n-grams.
+**Hypothesis (not a causal conclusion):** a transferable representation and within-family discriminator may improve fine-grained labels beyond ordinary word n-grams. This requires a pre-registered comparison on the same prompt-grouped folds and must not be treated as a design mandate.
 
 ## Recommended execution order
 

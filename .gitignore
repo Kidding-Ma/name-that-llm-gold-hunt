@@ -69,3 +69,7 @@ kaggle.json
 
 # Local release staging
 release_manifest.local.json
+# Generated external input manifests and server logs
+manifest.json
+preflight.json
+.server-tool-test-data/

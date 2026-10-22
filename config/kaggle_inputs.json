@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "route": "nishant_compact_control",
+  "description": "Public inputs for the first executable 0.592 upstream control. This file does not contain credentials or competition data.",
+  "data_root_env": "DATA_ROOT",
+  "input_subdirectory": "input",
+  "downloads": [
+    {
+      "kind": "competition",
+      "handle": "name-that-llm",
+      "target": "input/competition/name-that-llm",
+      "required": ["train.csv", "test.csv"],
+      "note": "The account must join/accept the competition rules. A public Kaggle competition download is not a substitute for a scored Kaggle submission."
+    },
+    {
+      "kind": "dataset",
+      "handle": "nishantdahal/ntl-two-stage-lora",
+      "target": "input/nishantdahal/ntl-two-stage-lora",
+      "required": [
+        "pool_v1.parquet",
+        "lora8b_v1/meta.json",
+        "lora8b_v1/adapter/adapter_config.json",
+        "lora8b_v1/adapter/adapter_model.safetensors",
+        "lora8b_v1/heads.safetensors",
+        "lora14b_v1/meta.json",
+        "lora14b_v1/adapter/adapter_config.json",
+        "lora14b_v1/adapter/adapter_model.safetensors",
+        "lora14b_v1/heads.safetensors"
+      ],
+      "note": "The public dataset is third-party material; inspect its current license and version before use."
+    },
+    {
+      "kind": "model",
+      "handle": "qwen-lm/qwen-3/Transformers/8b-base/1",
+      "target": "input/models/qwen-3/8b-base",
+      "required_globs": ["config.json", "tokenizer.json", "*.safetensors"],
+      "selector": {
+        "model_type": "qwen3",
+        "hidden_size": 4096,
+        "num_hidden_layers": 36
+      },
+      "note": "This is a Kaggle model variation/version handle. Current official CLI syntax is documented in docs/KAGGLE_DOWNLOADS.md; verify the mounted files and license."
+    },
+    {
+      "kind": "model",
+      "handle": "qwen-lm/qwen-3/Transformers/14b-base/1",
+      "target": "input/models/qwen-3/14b-base",
+      "required_globs": ["config.json", "tokenizer.json", "*.safetensors"],
+      "selector": {
+        "model_type": "qwen3",
+        "hidden_size": 5120,
+        "num_hidden_layers": 40
+      },
+      "note": "This is a Kaggle model variation/version handle. Current official CLI syntax is documented in docs/KAGGLE_DOWNLOADS.md; verify the mounted files and license."
+    }
+  ],
+  "optional_routes_not_downloaded_by_default": [
+    "josephadamski91/ntl-atlas-qwen3-8b-v1",
+    "prvsiyan/ntl-public-in-style-pool-v1",
+    "prvsiyan/ntl-two-stage-lora-adapters-v1",
+    "kirilltym/0-600-teach-the-model-remove-the-prompt"
+  ],
+  "optional_route_warning": "Current prvsiyan v10 is explicitly unscored and disables the historical branch-B Lightning checkpoint. Optional handles do not reproduce historical v4 0.604 and are not auto-downloaded by compact setup."
+}

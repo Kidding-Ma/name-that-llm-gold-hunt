@@ -20,10 +20,12 @@ Required Kaggle inputs
 4. GPU: preferably 2x T4, internet off.
 
 The implementation deliberately does not use prompt IDs, Hungarian assignment,
-or hidden labels. It uses only the public pool, pretrained model inputs, test
-text, and the two public LoRA checkpoints. Centered twins are applied only to
-content-TF-IDF clusters of size 2--18. Sinkhorn balancing is skipped for tiny
-interactive test files such as the local 3-row example.
+or hidden labels. Its independent control uses only the public pool, pretrained
+model inputs, test text, and the two public LoRA checkpoints, with centered
+ twins and Sinkhorn disabled. `--allow-transductive` separately enables
+content-TF-IDF test-batch clusters of size 2--18 and uniform-prior Sinkhorn;
+that mode is a hypothesis requiring rule review and pseudo-test stress tests.
+The full-test guard rejects the local three-row smoke fixture.
 
 Usage as a Kaggle notebook cell
 --------------------------------
@@ -32,8 +34,9 @@ runtime has ipykernel in sys.modules, so command-line parsing is disabled.
 
 Usage as a Python file
 ----------------------
-    python kaggle_best_two_stage_lora.py
-    python kaggle_best_two_stage_lora.py --only-8b
+    python kaggle_best_two_stage_lora.py --no-twin --no-balance
+    python kaggle_best_two_stage_lora.py --allow-transductive
+    python kaggle_best_two_stage_lora.py --only-8b --no-twin --no-balance
     python kaggle_best_two_stage_lora.py --only-14b
     python kaggle_best_two_stage_lora.py --no-twin
     python kaggle_best_two_stage_lora.py --no-balance
@@ -45,8 +48,10 @@ final probabilities, IDs/labels and inferred groups. They are not competition
 submissions or OOF estimates; never commit them. Default prediction weights
 and the public recipe are unchanged by score export.
 
-The normal/full recipe is the first command. `--only-8b` is a smoke/ablation
-mode and is not the reported 0.592 blend.
+The default independent control disables test-batch clustering and Sinkhorn;
+use `--allow-transductive` only for the separately named public-reference
+hypothesis after rule review. `--only-8b` is a smoke/ablation mode and is not
+the reported 0.592 blend.
 """
 from __future__ import annotations
 
@@ -157,49 +162,56 @@ def view_text(text: str, view: str) -> str:
 
 
 def find_competition_data(input_dir: Path) -> tuple[Path, Path]:
-    """Find competition train/test rather than an auxiliary dataset's CSVs."""
-    train_path = None
+    """Find one unambiguous competition train/test pair, not auxiliary CSVs."""
+    train_candidates: list[Path] = []
     for candidate in sorted(input_dir.rglob("train.csv")):
         try:
             header = pd.read_csv(candidate, nrows=2)
         except Exception:
             continue
         if {"id", "prompt_id", "text", "model"}.issubset(header.columns):
-            train_path = candidate
-            break
-    if train_path is None:
+            train_candidates.append(candidate)
+    if not train_candidates:
         raise FileNotFoundError(
             "Could not find competition train.csv with id,prompt_id,text,model. "
             "Attach the Name That LLM competition data."
         )
+    if len(train_candidates) > 1:
+        raise RuntimeError(f"Ambiguous competition train.csv candidates: {train_candidates}")
+    train_path = train_candidates[0]
 
     same_dir = train_path.parent / "test.csv"
     candidates = [same_dir] if same_dir.exists() else []
     candidates += [p for p in sorted(input_dir.rglob("test.csv")) if p != same_dir]
+    test_candidates: list[Path] = []
     for candidate in candidates:
         try:
             header = pd.read_csv(candidate, nrows=2)
         except Exception:
             continue
         if {"id", "text"}.issubset(header.columns) and "model" not in header.columns:
-            return train_path, candidate
-    raise FileNotFoundError("Could not find competition test.csv with id,text columns.")
+            test_candidates.append(candidate)
+    if len(test_candidates) != 1:
+        raise RuntimeError(f"Expected one competition test.csv paired with {train_path}; found {test_candidates}")
+    return train_path, test_candidates[0]
 
 
 def find_pool(input_dir: Path) -> Path:
     candidates = []
     for candidate in sorted(input_dir.rglob("pool_v1.parquet")):
         try:
-            header = pd.read_parquet(candidate, columns=None).head(1)
+            header = pd.read_parquet(candidate, columns=["text", "model"]).head(1)
         except Exception:
             continue
-        if {"text", "model"}.issubset(header.columns):
+        if {"text", "model"}.issubset(header.columns) and len(header) > 0:
             candidates.append(candidate)
     if not candidates:
         raise FileNotFoundError(
-            "Could not find pool_v1.parquet. Attach the public dataset "
-            "nishantdahal/ntl-two-stage-lora."
+            "Could not find a readable nonempty pool_v1.parquet with text,model. "
+            "Attach the public dataset nishantdahal/ntl-two-stage-lora."
         )
+    if len(candidates) > 1:
+        raise RuntimeError(f"Ambiguous pool_v1.parquet candidates: {candidates}")
     return candidates[0]
 
 
@@ -207,11 +219,23 @@ def find_checkpoint(input_dir: Path, name: str) -> Path:
     candidates = sorted(
         p.parent for p in input_dir.rglob("meta.json") if p.parent.name == name
     )
-    if not candidates:
+    valid = []
+    required = {
+        "meta.json",
+        "adapter/adapter_config.json",
+        "adapter/adapter_model.safetensors",
+        "heads.safetensors",
+    }
+    for candidate in candidates:
+        if all((candidate / relative).is_file() and (candidate / relative).stat().st_size > 0 for relative in required):
+            valid.append(candidate)
+    if not valid:
         raise FileNotFoundError(
-            f"Could not find {name}/meta.json. Attach nishantdahal/ntl-two-stage-lora."
+            f"Could not find a complete {name} adapter bundle. Attach nishantdahal/ntl-two-stage-lora."
         )
-    return candidates[0]
+    if len(valid) > 1:
+        raise RuntimeError(f"Ambiguous {name} adapter bundles: {valid}")
+    return valid[0]
 
 
 def _config_matches(config: dict, spec: dict) -> bool:
@@ -228,12 +252,18 @@ def find_base_model(input_dir: Path, spec: dict) -> Path:
             continue
         if _config_matches(config, spec):
             candidates.append(config_path.parent)
-    if not candidates:
+    valid = []
+    for candidate in candidates:
+        if (candidate / "tokenizer.json").is_file() and any(candidate.glob("*.safetensors")):
+            valid.append(candidate)
+    if not valid:
         raise FileNotFoundError(
-            f"Could not find attached base model matching {spec}. Add the corresponding "
+            f"Could not find a complete attached base model matching {spec}. Add the corresponding "
             "Qwen3 Transformers model input."
         )
-    return candidates[0]
+    if len(valid) > 1:
+        raise RuntimeError(f"Ambiguous base model directories matching {spec}: {valid}")
+    return valid[0]
 
 
 def align_decision(decision: np.ndarray, classes: Iterable[int]) -> np.ndarray:
@@ -256,7 +286,22 @@ def fit_ngram_member(train: pd.DataFrame, test: pd.DataFrame, pool: pd.DataFrame
         raise ValueError("pool_v1.parquet must contain text and model columns")
     pool["text"] = pool["text"].fillna("").astype(str)
     pool["model"] = pool["model"].astype(str)
-    pool = pool[pool["model"].isin(LABEL_TO_ID)].drop_duplicates(subset=["text"]).reset_index(drop=True)
+    pool = pool[pool["model"].isin(LABEL_TO_ID)].copy()
+    if (pool["text"].str.strip() == "").any():
+        raise ValueError("The attached pool contains empty text rows")
+    conflicts = pool.groupby("text")["model"].nunique()
+    if (conflicts > 1).any():
+        raise ValueError("The attached pool contains exact text rows with conflicting labels")
+    pool = pool.drop_duplicates(subset=["text", "model"]).reset_index(drop=True)
+    train_texts_exact = set(train["text"].astype(str))
+    test_texts_exact = set(test["text"].astype(str))
+    overlap_train = pool["text"].isin(train_texts_exact)
+    overlap_test = pool["text"].isin(test_texts_exact)
+    if bool(overlap_train.any()) or bool(overlap_test.any()):
+        raise ValueError("The external pool overlaps official train/test text; inspect provenance before use")
+    pool_labels = set(pool["model"].unique())
+    if pool_labels != set(LABELS):
+        raise ValueError(f"The attached pool labels do not match the 18-class checkpoint set: {sorted(pool_labels)}")
     if len(pool) < 1000:
         raise ValueError(f"The attached pool has only {len(pool)} valid rows; expected roughly 34,940.")
 
@@ -436,7 +481,8 @@ def extract_lora_features(
         raise ValueError("Checkpoint label order differs from this script; refusing to mislabel predictions.")
     cfg = meta["cfg"]
     layers = list(cfg["layers"])
-    dtype = torch.bfloat16 if torch.cuda.get_device_capability(0)[0] >= 8 else torch.float16
+    capability_device = torch.cuda.current_device()
+    dtype = torch.bfloat16 if torch.cuda.get_device_capability(capability_device)[0] >= 8 else torch.float16
 
     tokenizer = AutoTokenizer.from_pretrained(base_dir)
     tokenizer.padding_side = "right"
@@ -463,7 +509,8 @@ def extract_lora_features(
         max_length=int(cfg["max_len"]),
     )["input_ids"]
     if tokenizer.eos_token_id is not None:
-        token_ids = [ids + [tokenizer.eos_token_id] for ids in token_ids]
+        max_len = int(cfg["max_len"])
+        token_ids = [(ids + [tokenizer.eos_token_id])[:max_len] for ids in token_ids]
     order = np.argsort([len(ids) for ids in token_ids], kind="stable")
     features = np.zeros((len(token_ids), hidden * len(layers)), dtype=np.float32)
 
@@ -475,9 +522,10 @@ def extract_lora_features(
         hidden_states = model(**batch, output_hidden_states=True, use_cache=False).hidden_states
         finite = all(torch.isfinite(hidden_states[layer]).all() for layer in layers)
         if not finite:
-            print("non-finite fp16 batch; retrying in bf16", flush=True)
-            model.to(torch.bfloat16)
-            hidden_states = model(**batch, output_hidden_states=True, use_cache=False).hidden_states
+            raise FloatingPointError(
+                "Non-finite hidden states detected; refusing unsafe dtype mutation on a possibly sharded model. "
+                "Retry on a GPU with a bf16-capable CUDA device or adjust the explicit model dtype."
+            )
 
         mask = batch["attention_mask"].to(head_device).unsqueeze(-1).float()
         # The first token is the attention sink used by the public recipe.
@@ -568,8 +616,9 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--metadata", type=Path, default=None)
     parser.add_argument("--only-8b", action="store_true", help="Use only the 8B branch")
     parser.add_argument("--only-14b", action="store_true", help="Use only the 14B branch")
-    parser.add_argument("--no-twin", action="store_true", help="Disable centered twin evidence")
-    parser.add_argument("--no-balance", action="store_true", help="Disable Sinkhorn class balancing")
+    parser.add_argument("--no-twin", action="store_true", help="Disable centered twin evidence (recommended for independent control)")
+    parser.add_argument("--no-balance", action="store_true", help="Disable Sinkhorn class balancing (recommended for independent control)")
+    parser.add_argument("--allow-transductive", action="store_true", help="Allow test-batch clustering and uniform-prior balancing; requires separate rule review")
     parser.add_argument("--balance-min-rows", type=int, default=BALANCE_MIN_ROWS)
     parser.add_argument(
         "--scores-output",
@@ -582,6 +631,10 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         parser.error("--only-8b and --only-14b are mutually exclusive")
     if args.balance_min_rows < 1:
         parser.error("--balance-min-rows must be positive")
+    if not args.allow_transductive and not args.no_twin:
+        parser.error("--no-twin is required unless --allow-transductive is set")
+    if not args.allow_transductive and not args.no_balance:
+        parser.error("--no-balance is required unless --allow-transductive is set")
     if args.scores_output is not None and args.scores_output.suffix.lower() != ".npz":
         parser.error("--scores-output must end in .npz")
     output = args.output.resolve()
@@ -616,6 +669,8 @@ def main(argv: list[str] | None = None) -> None:
         raise ValueError("Competition labels do not match the public checkpoint label set.")
     if not train["id"].is_unique or not test["id"].is_unique:
         raise ValueError("Duplicate IDs in competition input.")
+    if len(test) < 50:
+        raise ValueError("The visible test input is too small for a leaderboard submission; use a full Kaggle test set.")
 
     pool = pd.read_parquet(pool_path)
     print(f"train={train.shape}, test={test.shape}, pool={pool.shape}", flush=True)
@@ -626,7 +681,12 @@ def main(argv: list[str] | None = None) -> None:
         score_bank["svc"] = p_svc
     logit += W_SVC * np.log(np.clip(p_svc, 1e-9, 1.0))
 
-    groups, twin_rows = topic_clusters(test["text"].tolist())
+    if args.allow_transductive:
+        groups, twin_rows = topic_clusters(test["text"].tolist())
+    else:
+        groups = np.arange(len(test), dtype=int) + 1
+        twin_rows = np.zeros(len(test), dtype=bool)
+        print("transductive centered-twin clustering disabled", flush=True)
     if args.only_8b:
         selected = ["lora8b_v1"]
     elif args.only_14b:
@@ -693,9 +753,14 @@ def main(argv: list[str] | None = None) -> None:
         "public_reference": "https://www.kaggle.com/code/nishantdahal/two-stage-lora-on-the-public-pool",
         "reported_public_lb": 0.592,
         "reported_grouped_cv": 0.593,
+        "reported_scores_are_upstream": True,
+        "score_evidence_accessed_utc": "2026-10-22T00:00:00Z",
+        "external_pool_overlap_checked": True,
+        "near_duplicate_overlap_checked": False,
+        "license_and_rules_confirmed_by_runner": False,
         "labels": LABELS,
         "selected_checkpoints": selected,
-        "is_full_reference_recipe": not args.only_8b and not args.only_14b and not args.no_twin and not args.no_balance and args.balance_min_rows == BALANCE_MIN_ROWS,
+        "is_full_reference_recipe": args.allow_transductive and not args.only_8b and not args.only_14b and not args.no_twin and not args.no_balance and args.balance_min_rows == BALANCE_MIN_ROWS,
         "own_hidden_test_score": None,
         "weights": {"svc": W_SVC, **{k: LORA_CONFIG[k]["w"] for k in selected}},
         "twin_weights": {k: LORA_CONFIG[k]["twin_w"] if not args.no_twin else 0.0 for k in selected},
@@ -713,6 +778,7 @@ def main(argv: list[str] | None = None) -> None:
         },
         "only_8b": bool(args.only_8b),
         "only_14b": bool(args.only_14b),
+        "allow_transductive": bool(args.allow_transductive),
         "score_bank_written": args.scores_output is not None,
         "gpu_count": torch.cuda.device_count(),
         "gpu_names": [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())],
@@ -722,8 +788,14 @@ def main(argv: list[str] | None = None) -> None:
         "train_sha256": sha256(train_path),
         "test_sha256": sha256(test_path),
         "pool_sha256": sha256(pool_path),
-        "input_paths_recorded": False,
-        "output_path_recorded": False,
+        "input_paths_recorded": True,
+        "output_path_recorded": True,
+        "input_paths": {
+            "train": str(train_path),
+            "test": str(test_path),
+            "pool": str(pool_path),
+        },
+        "output_path": str(output_path),
         "output_sha256": sha256(output_path),
         "seconds": time.time() - started,
         "uses_prompt_id_for_inference": False,

@@ -10,7 +10,7 @@ This is a candidate, not a hidden-test guarantee. It does not use prompt IDs,
 assignment, test quotas, hidden labels, or manual predictions.
 
 Examples:
-  python cpu_blend_inference.py --data-dir /private/name-that-llm --dry-run
+  python cpu_blend_inference.py --data-dir /private/name-that-llm --output /private/artifacts/dry-run.parquet --dry-run
   python cpu_blend_inference.py --data-dir /private/name-that-llm --output /private/artifacts/submission.parquet
 """
 from __future__ import annotations

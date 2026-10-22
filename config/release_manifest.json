@@ -6,6 +6,9 @@
   "contains_model_weights": false,
   "contains_credentials": false,
   "primary_gpu_recipe": "scripts/kaggle_best_two_stage_lora.py",
+  "server_entrypoint": "scripts/setup_gpu_env.sh --data-root $DATA_ROOT --download",
+  "server_run_wrapper": "scripts/run_gpu_control.sh --data-root $DATA_ROOT",
+  "input_manifest": "config/kaggle_inputs.json",
   "highest_public_target": {
     "method": "prvsiyan_prompt_is_not_the_author_v4",
     "reported_public_balanced_accuracy": 0.604,

@@ -55,11 +55,13 @@ Nishant 上游作者报告 grouped CV `0.593`、public LB `0.592`。这是上游
    - Qwen3 8B Base，Transformers 格式；
    - Qwen3 14B Base，Transformers 格式。
 6. 将 `scripts/kaggle_best_two_stage_lora.py` 全部复制到一个代码单元格。
-7. 首次运行默认完整模式：
+7. 首次只运行独立控制（关闭 test-batch clustering 和 Sinkhorn）：
 
    ```text
-   python kaggle_best_two_stage_lora.py
+   python kaggle_best_two_stage_lora.py --no-twin --no-balance
    ```
+
+   `--allow-transductive` 才会启用上游的 centered-twin/Sinkhorn 组合；需单独命名、确认规则并完成 pseudo-test stress test 后再运行。
 
    在 Notebook 单元格中直接运行时，复制文件内容即可；不要复制 shell 命令本身。
 
@@ -105,15 +107,14 @@ qwen-lm/qwen-3/Transformers/14b-base/1
 
 ### 0.592 控制
 
-在运行完整模型前，把 `scripts/lora_kaggle_preflight.py` 粘贴到独立单元格运行。它只检查：
+主路径不要使用 legacy `scripts/lora_kaggle_preflight.py`：它会扫描更宽的实验性输入集合，可能对 compact route 产生无关的 `MISSING`。在私有服务器使用：
 
-- CUDA/GPU 是否可见；
-- competition train/test 是否存在；
-- public pool 是否存在；
-- Qwen 模型配置是否存在；
-- adapter/head 文件是否存在。
+```bash
+python scripts/gpu_input_manifest.py verify --data-root "$DATA_ROOT" --hash metadata
+python scripts/server_preflight.py --data-root "$DATA_ROOT" --strict
+```
 
-如果大量输入显示 `MISSING`，不要直接运行完整模型。先修复挂载。
+在 Kaggle Code Notebook 中，先确认 competition、pool、两个 adapter bundle 和两个 Qwen model input 的精确挂载版本，再运行 compact script。`lora_kaggle_preflight.py` 仅作为旧实验路线的诊断工具，不是 0.592 compact gate。
 
 ### 0.604 研究目标
 
@@ -160,8 +161,13 @@ qwen-lm/qwen-3/Transformers/14b-base/1
 
 - `pool_v1.parquet`；
 - `lora8b_v1/meta.json`；
+- `lora8b_v1/adapter/adapter_config.json`；
+- `lora8b_v1/adapter/adapter_model.safetensors`；
+- `lora8b_v1/heads.safetensors`；
 - `lora14b_v1/meta.json`；
-- 对应 `adapter_model.safetensors` 和 `heads.safetensors`。
+- `lora14b_v1/adapter/adapter_config.json`；
+- `lora14b_v1/adapter/adapter_model.safetensors`；
+- `lora14b_v1/heads.safetensors`。
 
 ### 标签顺序不匹配
 
