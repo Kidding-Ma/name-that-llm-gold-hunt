@@ -41,6 +41,9 @@ if ! command -v "$PYTHON" >/dev/null 2>&1 && [[ ! -x "$PYTHON" ]]; then
   echo "Python executable not found: $PYTHON" >&2; exit 2
 fi
 DATA_ROOT="$($PYTHON -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$DATA_ROOT")"
+case "$DATA_ROOT/" in
+  "$REPO_ROOT/"*) echo "DATA_ROOT must be outside the repository: $DATA_ROOT" >&2; exit 2 ;;
+esac
 INPUT_DIR="$DATA_ROOT/input"
 GIT_COMMIT="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo nogit)"
 RUN_ID="$(date -u +%Y%m%dT%H%M%S.%NZ)-${GIT_COMMIT}-$$-$RANDOM"

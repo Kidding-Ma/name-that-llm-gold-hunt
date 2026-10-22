@@ -60,10 +60,11 @@ class CliTests(unittest.TestCase):
         self.parse = helpers()["parse_args"]
 
     def test_default_recipe_is_unchanged(self) -> None:
-        with contextlib.redirect_stderr(io.StringIO()):
-            with self.assertRaises(SystemExit) as caught:
-                self.parse([])
-        self.assertEqual(caught.exception.code, 2)
+        args = self.parse([])
+        self.assertFalse(args.only_8b)
+        self.assertFalse(args.only_14b)
+        self.assertTrue(args.no_twin)
+        self.assertTrue(args.no_balance)
         args = self.parse(["--no-twin", "--no-balance"])
         self.assertFalse(args.only_8b)
         self.assertFalse(args.only_14b)

@@ -626,6 +626,10 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         default=None,
         help="Optional private .npz archive of aligned member probabilities; never commit it",
     )
+    # An explicitly pasted Kaggle notebook call may pass [] and should use the
+    # independent control; normal CLI invocation with argv=None remains fail-closed.
+    if argv == []:
+        argv = ["--no-twin", "--no-balance"]
     args = parser.parse_args(argv)
     if args.only_8b and args.only_14b:
         parser.error("--only-8b and --only-14b are mutually exclusive")

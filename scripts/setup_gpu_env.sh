@@ -53,6 +53,10 @@ if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
   echo "Python executable not found: $PYTHON_BIN" >&2; exit 2
 fi
 DATA_ROOT="$($PYTHON_BIN -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$DATA_ROOT")"
+REPO_ROOT="$(cd -- "$(dirname -- "$0")/.." && pwd)"
+case "$DATA_ROOT/" in
+  "$REPO_ROOT/"*) echo "DATA_ROOT must be outside the repository: $DATA_ROOT" >&2; exit 2 ;;
+esac
 VENV="${VENV:-$DATA_ROOT/.venv}"
 VENV="$($PYTHON_BIN -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$VENV")"
 mkdir -p "$DATA_ROOT"/{input,logs,outputs,runs}
