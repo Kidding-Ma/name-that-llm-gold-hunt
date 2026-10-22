@@ -4,7 +4,7 @@ This repository is a curated handoff bundle. It intentionally does not include c
 
 ## Third-party material
 
-Some scripts and method descriptions are adaptations or packaging of publicly available Kaggle notebooks and datasets. Their upstream authors, licenses, attribution requirements, and competition rules remain applicable. In particular, see the links in `docs/PUBLIC_SOURCES.md` before redistribution or commercial use.
+Some scripts and method descriptions are adaptations or packaging of publicly available Kaggle notebooks and datasets. Their upstream authors, licenses, attribution requirements, and competition rules remain applicable. In particular, see `docs/PUBLIC_SOURCES.md` and `docs/DATA_AND_LICENSES.md` before use, redistribution, or commercial use.
 
 Known upstream references include:
 

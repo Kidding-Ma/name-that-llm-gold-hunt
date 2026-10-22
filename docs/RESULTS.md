@@ -6,7 +6,7 @@ This file separates locally reproduced values from upstream claims and the user'
 |---|---:|---|---|
 | Original char/word/style SVC, prompt-grouped OOF | 0.370508 accuracy / 0.370403 BA | A | Local private snapshot |
 | Style-aware four-view SVC, prompt-grouped OOF | 0.384484 BA | A | Local private snapshot |
-| Style-aware plus numeric-style CPU script | 0.388936 BA | A | Local script/evidence record; verify independently before citing as a final model |
+| Style-aware plus numeric-style CPU script | 0.388936 BA | A | Private 5-fold run; compact summary in `evidence/metrics/cpu_numeric_style_local_metrics.json` |
 | CPU row-softmax blend probe | ~0.39337 | A/B | Fold-held-out diagnostic, not nested retraining |
 | Qwen3-1.7B blend | ~0.431 | C | Upstream notebook note; not reproduced here |
 | Two-stage Qwen3 8B/14B LoRA + public pool | 0.593 grouped CV / 0.592 public LB | B/C | Upstream notebook report; reproduce with the packaged script |

@@ -531,7 +531,7 @@ def main(argv: list[str] | None = None) -> None:
 
     if not torch.cuda.is_available():
         raise RuntimeError(
-            "CUDA is unavailable. For a CPU-only submission use research/scripts/kaggle_submit.py; "
+            "CUDA is unavailable. For a CPU-only submission use scripts/kaggle_submit.py; "
             "the public 0.592 recipe needs attached Qwen3 LoRA inputs."
         )
 
@@ -614,10 +614,8 @@ def main(argv: list[str] | None = None) -> None:
         "train_sha256": sha256(train_path),
         "test_sha256": sha256(test_path),
         "pool_sha256": sha256(pool_path),
-        "input_train": str(train_path),
-        "input_test": str(test_path),
-        "input_pool": str(pool_path),
-        "output": str(output_path),
+        "input_paths_recorded": False,
+        "output_path_recorded": False,
         "output_sha256": sha256(output_path),
         "seconds": time.time() - started,
         "uses_prompt_id_for_inference": False,

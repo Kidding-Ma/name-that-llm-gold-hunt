@@ -19,7 +19,7 @@
 | Original char+word+style LinearSVC | 0.370508 grouped OOF | A: local run | Simple baseline; close to the user's reported ~0.365 submission |
 | Official word+char LogisticRegression | 0.314479 grouped OOF | A: local run | Starter control |
 | Style-aware four-view LinearSVC(C=0.5) | 0.384484 grouped OOF | A: local run | Best verified pure style-aware CPU recipe in the private snapshot |
-| Style-aware + 25 numeric style statistics | 0.388936 grouped OOF | A: local run/script evidence | Stronger CPU submission script; still validate on the real hidden test |
+| Style-aware + 25 numeric style statistics | 0.388936 grouped OOF | A: private local run; compact summary shipped | Stronger CPU submission script; still validate on the real hidden test |
 | CPU style/original row-softmax blend | ~0.39337 fold-held-out probe | A/B: diagnostic only | Candidate; not nested retraining and not a leaderboard guarantee |
 | Qwen3-1.7B embedding blend | ~0.431 in upstream notes | C: upstream notebook claim | GPU starting point; not independently reproduced here |
 | Two-stage Qwen3 8B/14B LoRA + public pool | 0.593 grouped CV / 0.592 public LB in upstream notebook | B/C: public code and author report | Highest-priority reproducible public GPU recipe; still must be rerun |

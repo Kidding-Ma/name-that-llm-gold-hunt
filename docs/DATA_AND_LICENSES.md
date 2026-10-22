@@ -42,7 +42,20 @@ The repository mentions Qwen, public pools, UltraBERT, DeBERTa, ELECTRA, GPT pro
 - hash and expected file names;
 - whether prompts overlap with the competition data.
 
-The public pool's license and attribution must be checked on its current Kaggle dataset page before redistribution. The repository does not grant permission to mirror it.
+The public pool's license and attribution must be checked on its current Kaggle dataset page before use or redistribution. The repository does not grant permission to mirror it.
+
+## External input manifest
+
+The following identifiers are pinned by name/URL for reproducibility. Kaggle may expose a version number when the input is attached; record that version and the local SHA-256 in the private run log. No binary hash is asserted here because the artifacts are intentionally not redistributed.
+
+| Input | Public identifier | Expected role | License/terms action |
+|---|---|---|---|
+| Competition | [`name-that-llm`](https://www.kaggle.com/competitions/name-that-llm) | official train/hidden test | accept and follow competition rules |
+| Public pool + adapters | [`nishantdahal/ntl-two-stage-lora`](https://www.kaggle.com/datasets/nishantdahal/ntl-two-stage-lora) | `pool_v1.parquet`, `lora8b_v1`, `lora14b_v1` | inspect current Kaggle dataset license/attribution |
+| Qwen3 8B base | [`qwen-lm/qwen-3`](https://www.kaggle.com/models/qwen-lm/qwen-3) | Transformers base matching `hidden_size=4096`, `num_hidden_layers=36` | follow the Qwen license shown on the attached model version and Kaggle terms |
+| Qwen3 14B base | [`qwen-lm/qwen-3`](https://www.kaggle.com/models/qwen-lm/qwen-3) | Transformers base matching `hidden_size=5120`, `num_hidden_layers=40` | follow the Qwen license shown on the attached model version and Kaggle terms |
+
+The two-stage script records input SHA-256 values in its private metadata only. Do not paste private input paths or credentials into public issues.
 
 ## Output contract
 

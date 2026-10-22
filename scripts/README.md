@@ -18,8 +18,9 @@ All local scripts require explicit private input/output paths. They do not depen
 - `style_aware_runner.py` — prompt-grouped local OOF; writes private score banks and diagnostics.
 - `cpu_blend_inference.py` — local full-train CPU blend candidate.
 - `cpu_blend_probe.py` — read-only diagnostic for private OOF score banks.
-- `final_inference.py` — local full-train style-aware + numeric-style inference.
+- `final_inference.py` — local full-train style-aware + numeric-style inference. Its compact metadata intentionally redacts local input/output paths.
 - `audit_dataset.py` — local data/schema audit; writes compact metadata only.
+- `release_audit.py` — dependency-free public-tree policy audit; run from the repository root before every push.
 
 Example:
 

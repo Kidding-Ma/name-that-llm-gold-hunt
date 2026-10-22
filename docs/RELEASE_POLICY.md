@@ -24,10 +24,11 @@ This repository is public by design. Keep it small, auditable, and safe for coll
 
 1. Run `git status --short`.
 2. Run `git ls-files` and inspect the list.
-3. Search tracked files for `D:\Kaggle`, `C:\Users`, tokens, passwords, and private URLs.
+3. Search tracked files for machine-specific local paths, tokens, passwords, and private URLs.
 4. Check that no file is unexpectedly large.
 5. Confirm that all third-party references are linked in `docs/PUBLIC_SOURCES.md`.
 6. Confirm the README still explains how to attach data and checkpoints.
+7. Run `python scripts/release_audit.py` and require the release CI workflow to pass.
 
 ## External artifacts
 

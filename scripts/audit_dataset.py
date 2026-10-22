@@ -100,7 +100,7 @@ def main() -> None:
 
     report = {
         "python": sys.version,
-        "data_dir": str(data_dir),
+        "data_dir_recorded": false,
         "train": {
             "rows": int(len(train)),
             "columns": train.columns.tolist(),

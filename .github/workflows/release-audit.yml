@@ -1,0 +1,47 @@
+name: Release audit
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Check tracked file policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          forbidden='(^|/)(train|test)\.csv$|\.parquet$|\.safetensors$|\.bin$|\.pt$|\.pth$|\.ckpt$|\.zip$|\.7z$|\.rar$|__pycache__|\.deps/|(^|/)(papers|extracted)/|acl-recovery'
+          if git ls-files | grep -E "$forbidden"; then
+            echo 'Forbidden tracked path found.' >&2
+            exit 1
+          fi
+      - name: Check file sizes
+        shell: bash
+        run: |
+          set -euo pipefail
+          too_large=0
+          while IFS= read -r -d '' file; do
+            bytes=$(wc -c < "$file")
+            if [ "$bytes" -gt 1048576 ]; then
+              echo "Tracked file exceeds 1 MiB: $file ($bytes bytes)" >&2
+              too_large=1
+            fi
+          done < <(git ls-files -z)
+          exit "$too_large"
+      - name: Check sensitive patterns
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -n -I -E -e '-----BEGIN (RSA|OPENSSH|EC) PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}'; then
+            echo 'Credential-shaped text found.' >&2
+            exit 1
+          fi
+      - name: Run repository audit
+        run: python scripts/release_audit.py

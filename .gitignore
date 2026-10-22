@@ -3,12 +3,13 @@
 !/data/README.md
 *.csv
 *.parquet
-# Keep the two public placeholder READMEs trackable despite broad patterns.
-!data/README.md
-!artifacts/README.md
 *.zip
 *.7z
 *.rar
+*.tar
+*.tar.gz
+*.sqlite
+*.db
 
 # Model weights and adapters
 *.safetensors
@@ -18,6 +19,8 @@
 *.ckpt
 *.onnx
 *.gguf
+*.h5
+*.hdf5
 
 # Local outputs and experiment artifacts
 outputs/
@@ -26,10 +29,12 @@ outputs/
 checkpoints/
 runs/
 logs/
+*.log
 *.npy
 *.npz
 *.pkl
 *.joblib
+*.pickle
 
 # Python caches and environments
 __pycache__/
@@ -47,11 +52,16 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Secrets
+# Secrets and private credentials
 .env
 .env.*
 *.token
 *.secret
+*.pem
+*.key
+*.crt
+id_rsa*
+id_ed25519*
 credentials.json
 kaggle.json
 

@@ -11,9 +11,31 @@
   "user_goal": "gold medal",
   "upstream_0_667_attribution_verified": false,
   "external_inputs": [
-    "name-that-llm",
-    "nishantdahal/ntl-two-stage-lora",
-    "Qwen3 8B Base Transformers",
-    "Qwen3 14B Base Transformers"
+    {
+      "name": "name-that-llm",
+      "url": "https://www.kaggle.com/competitions/name-that-llm",
+      "version": "competition-controlled",
+      "binary_hash": "not_published"
+    },
+    {
+      "name": "nishantdahal/ntl-two-stage-lora",
+      "url": "https://www.kaggle.com/datasets/nishantdahal/ntl-two-stage-lora",
+      "version": "record_attached_kaggle_version_privately",
+      "binary_hash": "not_published"
+    },
+    {
+      "name": "Qwen3 8B Base Transformers",
+      "url": "https://www.kaggle.com/models/qwen-lm/qwen-3",
+      "config_selector": "model_type=qwen3, hidden_size=4096, num_hidden_layers=36",
+      "version": "record_attached_kaggle_version_privately",
+      "binary_hash": "not_published"
+    },
+    {
+      "name": "Qwen3 14B Base Transformers",
+      "url": "https://www.kaggle.com/models/qwen-lm/qwen-3",
+      "config_selector": "model_type=qwen3, hidden_size=5120, num_hidden_layers=40",
+      "version": "record_attached_kaggle_version_privately",
+      "binary_hash": "not_published"
+    }
   ]
 }

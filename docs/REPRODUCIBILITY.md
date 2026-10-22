@@ -48,7 +48,7 @@ The exact CUDA/PyTorch pairing is machine-specific; record it with every run.
 3. Add Qwen3 8B Base and Qwen3 14B Base Transformers model inputs.
 4. Select preferably 2×T4.
 5. Run `scripts/kaggle_best_two_stage_lora.py`.
-6. Save the metadata JSON privately; it includes input hashes and run time.
+6. Save the metadata JSON privately; it includes input hashes and run time but intentionally redacts local input/output paths.
 
 ## No hidden-test shortcut
 

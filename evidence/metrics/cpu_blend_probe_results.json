@@ -31,7 +31,7 @@
     }
   },
   "candidate_submission": {
-    "script": "research/scripts/cpu_blend_inference.py",
+    "script": "scripts/cpu_blend_inference.py",
     "style_weight": 0.7,
     "original_weight": 0.3,
     "uses_prompt_id_for_inference": false,
