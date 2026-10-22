@@ -361,7 +361,7 @@ def extract_archives(target: Path, keep: bool, log_path: Path) -> None:
             if not keep:
                 archive.unlink()
         except (OSError, ValueError, tarfile.TarError, zipfile.BadZipFile) as exc:
-            raise RuntimeError(f"Could not safely extract {archive}: {exc}") from exc
+            raise RuntimeError(f"Could not safely extract archive: {type(exc).__name__}") from exc
 
 
 def copy_tree_without_links(source: Path, target: Path) -> int:
@@ -404,7 +404,7 @@ def materialize_download(source: Path, target: Path, log_path: Path) -> None:
     if source.is_file():
         destination = safe_destination(target, Path(source.name))
         shutil.copy2(source, destination)
-        append_log(log_path, f"copied download {source} -> {destination}")
+        append_log(log_path, "copied file download")
         return
     if not source.is_dir():
         raise RuntimeError(f"Downloader returned a missing path: {source}")
@@ -448,7 +448,7 @@ def run_cli(command: list[str], log_path: Path) -> bool:
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=False)
     except OSError as exc:
-        append_log(log_path, f"launcher error: {exc}")
+        append_log(log_path, f"launcher error: {type(exc).__name__}")
         return False
     append_log(log_path, result.stdout)
     append_log(log_path, result.stderr)
@@ -463,7 +463,7 @@ def download_item(item: dict[str, Any], data_root: Path, log_path: Path, keep_ar
         extract_archives(target, keep_archives, log_path)
         if verify_item(item, data_root)["ok"]:
             return True
-        append_log(log_path, f"kagglehub output did not verify for {item['handle']}; trying CLI")
+        append_log(log_path, "kagglehub output did not verify; trying CLI")
     kind = item["kind"]
     handle = str(item["handle"])
     if kind == "competition":

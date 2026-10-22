@@ -1,6 +1,6 @@
-# 冲击 0.66 的 GPU 研究与执行计划
+# GPU 研究与执行计划（dated hypotheses）
 
-> 这是一份给下一位 GPU AI/算法工程师的作战计划。它不能保证金牌；每个结论都必须以完整 hidden-test Kaggle 提交和分数为准。
+> 这是一份按 2026-10-22 公开证据整理的候选路线清单，不是“冲击 0.66”的承诺，也不是架构决策。每个分数必须标注证据等级；只有完整 hidden-test Kaggle 提交和分数才是本仓库自己的结果。Claude Code 应先读 `CLAUDE.md`，重新核验规则/输入并获得 owner approval，再执行任何下载或 GPU 作业。
 
 ## 一、当前最重要的事实
 
@@ -27,7 +27,9 @@
 
 2×4090 不是“保证 0.66”的硬件门槛；它只是让复杂路线更容易运行。不要为了尚未验证的代码直接包月。
 
-## 三、严格执行顺序
+## 三、候选实验顺序（不是强制推荐）
+
+以下顺序只是基于当前公开证据的成本/信息量假设；如果规则、输入版本、资源或验证结果不支持，必须记录原因并选择其他路线。
 
 ### Phase 0：提交记录基线
 
@@ -45,15 +47,13 @@
 - Qwen3 14B Base；
 - 推荐 2×T4。
 
-运行 `scripts/kaggle_best_two_stage_lora.py`，然后分别运行：
+先运行独立控制（关闭 test-batch clustering 和 Sinkhorn）：
 
 ```text
---only-8b
---no-twin
---no-balance
+python scripts/kaggle_best_two_stage_lora.py --no-twin --no-balance
 ```
 
-每个开关单独一个 notebook 版本，不能同时改动。先得到真实 LB，才能判断输入、版本和 GPU 是否正确。
+随后才将 `--only-8b`、`--only-14b` 作为单独的消融运行。`--allow-transductive` 才会启用 centered-twin/Sinkhorn；它必须作为单独命名的假设，在规则检查和 pseudo-test stress test 后运行。每个变体使用独立 notebook 版本，不能同时改变多个实验因素。先得到真实 LB，才能判断输入、版本和 GPU 是否正确。
 
 ### Phase 2：先恢复历史依赖，再考虑 0.604 v4
 

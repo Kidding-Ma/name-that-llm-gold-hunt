@@ -40,15 +40,15 @@ The CPU style-aware model is strong on some providers but weak on fine-grained l
 
 **Hypothesis (not a causal conclusion):** a transferable representation and within-family discriminator may improve fine-grained labels beyond ordinary word n-grams. This requires a pre-registered comparison on the same prompt-grouped folds and must not be treated as a design mandate.
 
-## Recommended execution order
+## Candidate execution order (dated, non-binding)
 
-1. Reproduce the compact two-stage public LoRA recipe in a Kaggle GPU Notebook.
-2. Submit it and record the actual public/private score.
-3. Run `--only-8b`, `--no-twin`, and `--no-balance` as isolated ablations only if the full run works.
-4. Inspect the native prvsiyan v4 source/version and first verify the historical branch-B Lightning checkpoint/dependencies. Current v10 explicitly disables that branch and is unscored. Run `scripts/prvsiyan_route_preflight.py` only as a current-input/CUDA screening; exit 0 is not proof of v4 completeness. Do not rewrite or simplify v4 and call it a reproduction; record exact versions and licences manually.
-5. If the 0.604 route is unavailable, compare Joseph's ~0.596 and Kirill's ~0.600 routes as separately logged public candidates.
-6. Add one new model family at a time, keeping saved logits and a score ledger.
-7. Use the CPU scripts only as controls and fallback submissions.
+1. Revalidate current rules, sample submission, input versions, licenses, and full-test availability.
+2. Establish CPU/schema controls and obtain owner approval before any costly GPU action.
+3. Run the compact two-stage route first as the independent `--no-twin --no-balance` control; record the real public/private score if submitted.
+4. Run `--only-8b`, `--only-14b`, and `--allow-transductive` as separately named variants only when their hypotheses and rule status are recorded. The last variant requires pseudo-test stress tests.
+5. Inspect the native prvsiyan v4 source/version and first verify the historical branch-B Lightning checkpoint/dependencies. Current v10 explicitly disables that branch and is unscored. Run `scripts/prvsiyan_route_preflight.py` only as a current-input/CUDA screening; exit 0 is not proof of v4 completeness. Do not rewrite or simplify v4 and call it a reproduction; record exact versions and licences manually.
+6. If the 0.604 route is unavailable, compare Joseph's ~0.596 and Kirill's ~0.600 routes as separately logged public candidates.
+7. Add one new model family at a time, keeping saved logits and a score ledger. The CPU scripts remain controls and fallback submissions.
 
 ## Validation and competition-safety rules
 

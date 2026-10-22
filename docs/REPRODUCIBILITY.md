@@ -48,8 +48,8 @@ Install a CUDA-compatible PyTorch build first using the [PyTorch selector](https
 2. Add `nishantdahal/ntl-two-stage-lora`.
 3. Add Qwen3 8B Base and Qwen3 14B Base Transformers model inputs.
 4. Select preferably 2×T4.
-5. Run `scripts/kaggle_best_two_stage_lora.py`.
-6. Save the metadata JSON privately; it includes input hashes and run time but intentionally redacts local input/output paths.
+5. Run the independent control `scripts/kaggle_best_two_stage_lora.py --no-twin --no-balance`; use `--allow-transductive` only as a separately recorded hypothesis after rule review.
+6. Save the metadata JSON privately; it includes input hashes and records input/output paths for the private run record. Do not publish those paths.
 
 ## No hidden-test shortcut
 
